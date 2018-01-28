@@ -1,0 +1,16 @@
+{
+  "name": "M4ZE",
+  "version": "1.0.0",
+  "description": "A 4D maze game with raycast graphics",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "repository": "https://github.com/gliese1337/M4ZE.js",
+  "keywords": ["4D", "maze"],
+  "author": "Logan Kearsley",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^1.4.1"
+  }
+}

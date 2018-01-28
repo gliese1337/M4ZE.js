@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>WebGL</title>
+	<link type="text/css" href="canvas.css" rel="stylesheet">
+	<script src="raycast.js"></script>
+	<script src="webgl-utils.js"></script>
+	<script src="webgl.js"></script>
+</head>
+<body>
+<canvas id="display"></canvas>
+<canvas id="overlay"></canvas>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+	attribute vec4 a_position;
+	void main(){ gl_Position = a_position; }
+</script>
+
+<script id="fragment-shader" src="fragment.shader" type="x-shader/x-fragment"></script>
+
+<script>
+	var display = document.getElementById("display"),
+		overlay = document.getElementById("overlay");
+	display.width = overlay.width = window.innerWidth;
+	display.height = overlay.height = window.innerHeight;
+	main(display,overlay);
+</script>
+</body></html>
