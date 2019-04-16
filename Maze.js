@@ -192,8 +192,8 @@ Maze.prototype.getLongestPath = function(){
 
 Maze.prototype.flatten = function(){
 	let i = 0;
-	const wallgrid = [];
 	const { size, grid } = this;
+	const wallgrid = new Int32Array(size*size*size*size);
 
 	for(let x = 0; x < size; x++)
 	for(let y = 0; y < size; y++)

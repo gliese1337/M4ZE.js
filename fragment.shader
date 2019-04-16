@@ -21,18 +21,15 @@ uniform int u_map[SIZE4];
 out vec4 outColor;
 
 int get_cell(vec4 m){
-	int x = int(mod(m.x,float(SIZE)));
-	int y = int(mod(m.y,float(SIZE)));
-	int z = int(mod(m.z,float(SIZE)));
-	int w = int(mod(m.w,float(SIZE)));
+	ivec4 i = ivec4(mod(m,float(SIZE)));
 
 	// have to use constant indexing...
 	// All of this is just to get x, y, & z
 	// into loop indices to satisfy the compiler
-	for(int ix = x; ix < SIZE; ix++){
-		for(int iy = y; iy < SIZE; iy++){
-			for(int iz = z; iz < SIZE; iz++){
-				for(int iw = w; iw < SIZE; iw++){
+	for(int ix = i.x; ix < SIZE; ix++){
+		for(int iy = i.y; iy < SIZE; iy++){
+			for(int iz = i.z; iz < SIZE; iz++){
+				for(int iw = i.w; iw < SIZE; iw++){
 					return u_map[ix*SIZE3+iy*SIZE2+iz*SIZE+iw];
 				}
 			}
