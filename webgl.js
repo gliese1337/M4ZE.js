@@ -5,7 +5,6 @@ const Player = require("./Player.js");
 const Controls = require("./Controls.js");
 const GameLoop = require("./GameLoop.js");
 const Maze = require("./Maze.js");
-const GL_Utils = require("./webgl-utils.js");
 
 function get_route(map){
 	const path = map.getLongestPath();

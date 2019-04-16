@@ -1,4 +1,5 @@
 const cast = require("./Raycast.js");
+const GL_Utils = require("./webgl-utils.js");
 
 function Camera(canvas, map, hfov){
 	const gl = canvas.getContext("webgl");

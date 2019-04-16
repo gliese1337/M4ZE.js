@@ -199,7 +199,7 @@ Maze.prototype.flatten = function(){
 	for(let y = 0; y < size; y++)
 	for(let z = 0; z < size; z++)
 	for(let w = 0; w < size; w++)
-		wallgrid[i++] = this.grid[w][z][y][x];
+		wallgrid[i++] = grid[w][z][y][x];
 	
 	return wallgrid;
 }
