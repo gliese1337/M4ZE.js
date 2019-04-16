@@ -17,18 +17,11 @@ uniform sampler2D u_colorscale;
 
 uniform int u_map[SIZE4];
 
-struct int4 {
-	int x;
-	int y;
-	int z;
-	int w;
-};
-
-int get_cell(int x, int y, int z, int w){
-	x = int(mod(float(x),float(SIZE)));
-	y = int(mod(float(y),float(SIZE)));
-	z = int(mod(float(z),float(SIZE)));
-	w = int(mod(float(w),float(SIZE)));
+int get_cell(vec4 m){
+	int x = int(mod(m.x,float(SIZE)));
+	int y = int(mod(m.y,float(SIZE)));
+	int z = int(mod(m.z,float(SIZE)));
+	int w = int(mod(m.w,float(SIZE)));
 
 	// have to use constant indexing...
 	// All of this is just to get x, y, & z
@@ -171,22 +164,22 @@ vec3 calc_tex(int dim, vec4 ray){
 	vec3 coords, tint;
 	float h;
 
-	if(dim == 1 || dim == -1){
+	if(dim == 1){
 		coords = ray.yzw;
 		tint = red;
 		h = julia(coords, u_seed);
 	}
-	else if(dim == 2 || dim == -2){
+	else if(dim == 2){
 		coords = ray.xzw;
 		tint = green;
 		h = julia(coords, u_seed);
 	}
-	else if(dim == 3 || dim == -3){
+	else if(dim == 3){
 		coords = ray.xyw;
 		tint = blue;
 		h = julia(coords, u_seed);
 	}
-	else if(dim == 4 || dim == -4){
+	else if(dim == 4){
 		coords = ray.xyz;
 		tint = yellow;
 		h = julia(coords, u_seed);
@@ -203,19 +196,19 @@ vec3 calc_tex(int dim, vec4 ray){
 /* Flashlight Algorithm */
 const float light_angle = 40.0;
 const float light_mult = 5.0;
-vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float distance){
+vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float dist){
 	float t = degrees(acos(dot(fwd, v)));
 	if(t > light_angle){ return color; }
 
 	// Dim based on distance
-	float dm = light_mult / pow(2.0, distance);
+	float dm = light_mult / pow(2.0, dist);
 
 	// Dim based on incidence angle
 	float am;
-	if     (dim == 1 || dim == -1){ am = abs(v.x); }
-	else if(dim == 2 || dim == -2){ am = abs(v.y); }
-	else if(dim == 3 || dim == -3){ am = abs(v.z); }
-	else if(dim == 4 || dim == -4){ am = abs(v.w); }
+	if     (dim == 1){ am = abs(v.x); }
+	else if(dim == 2){ am = abs(v.y); }
+	else if(dim == 3){ am = abs(v.z); }
+	else if(dim == 4){ am = abs(v.w); }
 
 	float mult = 1.0 + dm * am * (1.0 - (t / light_angle));
 	return min(color * mult, 1.0);
@@ -227,19 +220,18 @@ vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float distance){
 
 // Find the distance to the next cell boundary
 // for a particular vector component
-float cast_comp(vec4 v, float o, out int sign, out int m){
-	float delta, fm;
+float cast_comp(vec4 v, float o, out float sign, out float m){
+	float delta;
 	if(v.x > 0.0){
-		sign = 1;
-		fm = floor(o);
-		delta = fm + 1.0 - o;
+		sign = 1.0;
+		m = floor(o);
+		delta = m + 1.0 - o;
 	}else{
-		sign = -1;
-		fm = ceil(o - 1.0);
-		delta = fm - o;
+		sign = -1.0;
+		m = ceil(o - 1.0);
+		delta = m - o;
 	}
 
-	m = int(fm);
 	return length(vec4(delta,delta*v.yzw/v.x));
 }
 
@@ -259,7 +251,7 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
-	int4 s, m;
+	vec4 s, m;
 	vec4 dists = vec4(
 		cast_comp(v.xyzw, o.x, s.x, m.x),
 		cast_comp(v.yxzw, o.y, s.y, m.y),
@@ -269,12 +261,12 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 
 	// Keep track of total distance,
 	// and distance in colored cells.
-	float distance = 0.0;
+	float dist = 0.0;
 	float bluefrac = 0.0;
 	float yellowfrac = 0.0;
 	float redfrac = 0.0;
 
-	int dim, value;
+	int dim;
 
 	// while loops are not allowed, so we have to use
 	// a for loop with a fixed max number of iterations
@@ -283,32 +275,32 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 		// and increment distances appropriately
 		float inc;
 		if(dists.x < dists.y && dists.x < dists.z && dists.x < dists.w){
-			dim = 1*s.x;
+			dim = 1;
 			m.x += s.x;
-			inc = dists.x - distance;
-			distance = dists.x;
+			inc = dists.x - dist;
+			dist = dists.x;
 			dists.x += deltas.x;
 		}else if(dists.y < dists.z && dists.y < dists.w){
-			dim = 2*s.y;
+			dim = 2;
 			m.y += s.y;
-			inc = dists.y - distance;
-			distance = dists.y;
+			inc = dists.y - dist;
+			dist = dists.y;
 			dists.y += deltas.y;
 		}else if(dists.z < dists.w){
-			dim = 3*s.z;
+			dim = 3;
 			m.z += s.z;
-			inc = dists.z - distance;
-			distance = dists.z;
+			inc = dists.z - dist;
+			dist = dists.z;
 			dists.z += deltas.z;
 		}else{
-			dim = 4*s.w;
+			dim = 4;
 			m.w += s.w;
-			inc = dists.w - distance;
-			distance = dists.w;
+			inc = dists.w - dist;
+			dist = dists.w;
 			dists.w += deltas.w;
 		}
 
-		value = get_cell(m.x, m.y, m.z, m.w);
+		int value = get_cell(m);
 		if(value == 1){
 			bluefrac += inc;
 		}else if(value == 2){
@@ -317,34 +309,31 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 			redfrac += inc;
 		}
 
-		if(value == 255 || distance >= range){
+		if(value == 255 || dist >= range){
 			break;
 		}
 	}
 
-	vec4 ray = o + distance *  v;
+	vec4 ray = o + dist *  v;
 	vec3 tex = calc_tex(dim, ray);
 
-	float clear = distance - yellowfrac - bluefrac - redfrac;
+	float clear = dist - yellowfrac - bluefrac - redfrac;
 
-	clear /= distance;
-	yellowfrac /= distance;
-	bluefrac /= distance;
-	redfrac /= distance;
+	clear /= dist;
+	yellowfrac /= dist;
+	bluefrac /= dist;
+	redfrac /= dist;
 
-	tex = tex*clear
+	tex = tex * clear
 		+ vec3(0.71,0.71,0.0)*yellowfrac
 		+ vec3(0.0,0.0,1.0)*bluefrac
 		+ vec3(1.0,0.0,0.0)*redfrac;
 
-	tex = add_light(u_fwd, v, tex, dim, distance);
-
-	return tex;
+	return add_light(u_fwd, v, tex, dim, dist);
 }
 
 void main(){
-	vec4 cell = floor(u_origin);
-	if(get_cell(int(cell.x), int(cell.y), int(cell.z), int(cell.w)) == 255){
+	if(get_cell(floor(u_origin)) == 255){
 		gl_FragColor = vec4(0,0,0,1);
 		return;
 	}
