@@ -22,20 +22,7 @@ out vec4 outColor;
 
 int get_cell(vec4 m){
 	ivec4 i = ivec4(mod(m,float(SIZE)));
-
-	// have to use constant indexing...
-	// All of this is just to get x, y, & z
-	// into loop indices to satisfy the compiler
-	for(int ix = i.x; ix < SIZE; ix++){
-		for(int iy = i.y; iy < SIZE; iy++){
-			for(int iz = i.z; iz < SIZE; iz++){
-				for(int iw = i.w; iw < SIZE; iw++){
-					return u_map[ix*SIZE3+iy*SIZE2+iz*SIZE+iw];
-				}
-			}
-		}
-	}
-	return 0;
+	return u_map[i.x*SIZE3+i.y*SIZE2+i.z*SIZE+i.w];
 }
 
 /*
