@@ -9,8 +9,8 @@
 <canvas id="display"></canvas>
 <canvas id="overlay"></canvas>
 
-<script id="vertex-shader" type="x-shader/x-vertex">
-	attribute vec4 a_position;
+<script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
+	in vec4 a_position;
 	void main(){ gl_Position = a_position; }
 </script>
 

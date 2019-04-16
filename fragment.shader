@@ -1,3 +1,4 @@
+#version 300 es
 precision mediump float;
 
 const int SIZE = 5;
@@ -17,6 +18,8 @@ uniform sampler2D u_colorscale;
 
 uniform int u_map[SIZE4];
 
+out vec4 outColor;
+
 int get_cell(vec4 m){
 	int x = int(mod(m.x,float(SIZE)));
 	int y = int(mod(m.y,float(SIZE)));
@@ -26,14 +29,10 @@ int get_cell(vec4 m){
 	// have to use constant indexing...
 	// All of this is just to get x, y, & z
 	// into loop indices to satisfy the compiler
-	for(int ix = 0; ix < SIZE; ix++){
-		if(ix != x){ continue; }
-		for(int iy = 0; iy < SIZE; iy++){
-			if(iy != y){ continue; }
-			for(int iz = 0; iz < SIZE; iz++){
-				if(iz != z){ continue; }
-				for(int iw = 0; iw < SIZE; iw++){
-					if(iw != w){ continue; }
+	for(int ix = x; ix < SIZE; ix++){
+		for(int iy = y; iy < SIZE; iy++){
+			for(int iz = z; iz < SIZE; iz++){
+				for(int iw = w; iw < SIZE; iw++){
 					return u_map[ix*SIZE3+iy*SIZE2+iz*SIZE+iw];
 				}
 			}
@@ -189,7 +188,7 @@ vec3 calc_tex(int dim, vec4 ray){
 		return mix(tint/16.0, grey, layered_noise(coords, 3, 3));
 	}
 
-	vec3 base = texture2D(u_colorscale, vec2(h, 0.5)).rgb;
+	vec3 base = texture(u_colorscale, vec2(h, 0.5)).rgb;
 	return mix(tint/8.0, base, layered_noise(coords, 5, 3));
 }
 
@@ -334,7 +333,7 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 
 void main(){
 	if(get_cell(floor(u_origin)) == 255){
-		gl_FragColor = vec4(0,0,0,1);
+		outColor = vec4(0,0,0,1);
 		return;
 	}
 
@@ -342,5 +341,5 @@ void main(){
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
 
 	vec3 color = cast_vec(u_origin, ray, 10.0);
-	gl_FragColor = vec4(color, 1.0);
+	outColor = vec4(color, 1.0);
 }

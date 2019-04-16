@@ -2,7 +2,7 @@ const cast = require("./Raycast.js");
 const GL_Utils = require("./webgl-utils.js");
 
 function Camera(canvas, map, hfov){
-	const gl = canvas.getContext("webgl");
+	const gl = canvas.getContext("webgl2");
 	let depth = canvas.width/(2*Math.tan(hfov/2));
 
 	this.gl = gl;
