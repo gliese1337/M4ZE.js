@@ -8,6 +8,8 @@ function Camera(canvas, map, hfov){
 	this.gl = gl;
 	this.canvas = canvas;
 	this.program = null;
+	this.mapdata = map.flatten();
+	this.mapsize = map.size;
 
 	this.locs = {};
 
@@ -75,6 +77,7 @@ function Camera(canvas, map, hfov){
 
 		// look up uniform locations
 		const locs = {
+			//size: gl.getUniformLocation(program, "SIZE"),
 			map: gl.getUniformLocation(program, "u_map"),
 			color: gl.getUniformLocation(program, "u_colorscale"),
 			res: gl.getUniformLocation(program, "u_resolution"),
@@ -91,17 +94,25 @@ function Camera(canvas, map, hfov){
 		// Set cross-frame constant uniforms
 		gl.uniform2f(locs.res, canvas.width, canvas.height);
 		gl.uniform1f(locs.depth, canvas.width/(2*Math.tan(hfov/2)));
-		gl.uniform1iv(locs.map, map.flatten());
 		gl.uniform3f(locs.seed, Math.random()-0.5, Math.random()-0.5, Math.random()-0.5);
+		//gl.uniform1i(locs.size, this.mapsize);
+		gl.uniform1i(locs.map, 0);
+
+		const tex = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.mapdata.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
 
 		//load textures
-		gl.uniform1i(locs.color, 0);
+		gl.uniform1i(locs.color, 1);
 		return new Promise(function(resolve){
-			let image = new Image();
+			const image = new Image();
 			image.src = "colorscale.png";
 			image.addEventListener("load",function(){
-				let tex = gl.createTexture();
-				gl.activeTexture(gl.TEXTURE0);
+				const tex = gl.createTexture();
+				gl.activeTexture(gl.TEXTURE1);
 				gl.bindTexture(gl.TEXTURE_2D, tex);
 				gl.texImage2D(
 					gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA,
@@ -145,9 +156,9 @@ Camera.prototype.resize = function(w,h){
 
 Camera.prototype.setCell = function(x,y,z,w,val){
 	const gl = this.gl;
-	const idx = this.map.cellIndex(x,y,z,w);
-	const mapLoc = gl.getUniformLocation(this.program, "u_map["+idx+"]");
-	gl.uniform1i(mapLoc, val);
+	this.mapdata[this.map.cellIndex(x,y,z,w)] = val;
+	gl.activeTexture(gl.TEXTURE0);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.mapdata.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
 };
 
 Camera.prototype.render = function(player){

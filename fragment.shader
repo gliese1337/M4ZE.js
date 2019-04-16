@@ -2,9 +2,8 @@
 precision mediump float;
 
 const int SIZE = 5;
-const int SIZE2 = SIZE*SIZE;
-const int SIZE3 = SIZE*SIZE2;
-const int SIZE4 = SIZE*SIZE3;
+int SIZE2;
+int SIZE3;
 
 uniform float u_depth;
 uniform vec2 u_resolution;
@@ -15,14 +14,14 @@ uniform vec4 u_fwd;
 
 uniform vec3 u_seed;
 uniform sampler2D u_colorscale;
-
-uniform int u_map[SIZE4];
+uniform sampler2D u_map;
 
 out vec4 outColor;
 
 int get_cell(vec4 m){
 	ivec4 i = ivec4(mod(m,float(SIZE)));
-	return u_map[i.x*SIZE3+i.y*SIZE2+i.z*SIZE+i.w];
+	float r = texelFetch(u_map, ivec2(i.x*SIZE3+i.y*SIZE2+i.z*SIZE+i.w, 0), 0).r;
+	return int(r * 255.0);
 }
 
 /*
@@ -104,9 +103,8 @@ float snoise(vec3 v){
 
 float layered_noise(vec3 v, int base, int octaves){
 	float acc = 0.0;
-	v *= pow(2.0, float(base));
-	for(int i = 1; i < 1000; i++){
-		if(i > octaves) break; //loops can't use non-constant expressions
+	v *= exp2(float(base));
+	for(int i = 1; i < octaves; i++){
 		acc += snoise(v);
 		v *= 2.0;
 	}
@@ -147,22 +145,23 @@ vec3 calc_tex(int dim, vec4 ray){
 	vec3 coords, tint;
 	float h;
 
-	if(dim == 1){
+	switch(dim){
+	case 1:
 		coords = ray.yzw;
 		tint = red;
 		h = julia(coords, u_seed);
-	}
-	else if(dim == 2){
+		break;
+	case 2:
 		coords = ray.xzw;
 		tint = green;
 		h = julia(coords, u_seed);
-	}
-	else if(dim == 3){
+		break;
+	case 3:
 		coords = ray.xyw;
 		tint = blue;
 		h = julia(coords, u_seed);
-	}
-	else if(dim == 4){
+		break;
+	default:
 		coords = ray.xyz;
 		tint = yellow;
 		h = julia(coords, u_seed);
@@ -184,14 +183,14 @@ vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float dist){
 	if(t > light_angle){ return color; }
 
 	// Dim based on distance
-	float dm = light_mult / pow(2.0, dist);
+	float dm = light_mult / exp2(dist);
 
 	// Dim based on incidence angle
 	float am;
 	if     (dim == 1){ am = abs(v.x); }
 	else if(dim == 2){ am = abs(v.y); }
 	else if(dim == 3){ am = abs(v.z); }
-	else if(dim == 4){ am = abs(v.w); }
+	else             { am = abs(v.w); }
 
 	float mult = 1.0 + dm * am * (1.0 - (t / light_angle));
 	return min(color * mult, 1.0);
@@ -249,12 +248,9 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 	float yellowfrac = 0.0;
 	float redfrac = 0.0;
 
-	int dim;
+	int value, dim;
 
-	// while loops are not allowed, so we have to use
-	// a for loop with a fixed max number of iterations
-	for(int i = 0; i < 1000; i++){
-		// Find the next closest cell boundary
+	do {// Find the next closest cell boundary
 		// and increment distances appropriately
 		float inc;
 		if(dists.x < dists.y && dists.x < dists.z && dists.x < dists.w){
@@ -283,7 +279,7 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 			dists.w += deltas.w;
 		}
 
-		int value = get_cell(m);
+		value = get_cell(m);
 		if(value == 1){
 			bluefrac += inc;
 		}else if(value == 2){
@@ -291,14 +287,10 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 		}else if(value == 3){
 			redfrac += inc;
 		}
-
-		if(value == 255 || dist >= range){
-			break;
-		}
-	}
+	} while(value != 255 && dist < range);
 
 	vec4 ray = o + dist *  v;
-	vec3 tex = calc_tex(dim, ray);
+	vec3 tex = dist >= range ? vec3(0,0,0) : calc_tex(dim, ray);
 
 	float clear = dist - yellowfrac - bluefrac - redfrac;
 
@@ -316,8 +308,11 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 }
 
 void main(){
-	if(get_cell(floor(u_origin)) == 255){
-		outColor = vec4(0,0,0,1);
+	SIZE2 = SIZE*SIZE;
+	SIZE3 = SIZE*SIZE2;
+
+	if (get_cell(u_origin) == 255) {
+		outColor = vec4(vec3(0), 1.0);
 		return;
 	}
 
