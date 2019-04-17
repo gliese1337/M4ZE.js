@@ -1,7 +1,8 @@
 #version 300 es
 precision mediump float;
 
-const int SIZE = 5;
+//const int SIZE = 5;
+uniform int SIZE;
 int SIZE2;
 int SIZE3;
 

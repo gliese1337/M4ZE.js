@@ -1,4 +1,4 @@
-const SIZE = 5;
+const SIZE = 10;
 const Camera = require("./GLCamera.js");
 const Overlay = require("./Overlay.js");
 const Player = require("./Player.js");
