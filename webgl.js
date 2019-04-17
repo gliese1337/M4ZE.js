@@ -20,19 +20,20 @@ function mark_route(camera, map, route, skip){
 
 	map.set(start.x,start.y,start.z,start.w,0);
 	map.set(end.x,end.y,end.z,end.w,2);
-	if(camera){
-		camera.setCell(start.x,start.y,start.z,start.w,0);
-		camera.setCell(end.x,end.y,end.z,end.w,2);
-	}
 	path.forEach(({x,y,z,w},i) => {
 		if((i+1) % mod == 0){
 			map.set(x,y,z,w,1);
-			if(camera){ camera.setCell(x,y,z,w,1); }
+			if(camera){ camera.setCell(x,y,z,w,1, true); }
 		}else{
 			map.set(x,y,z,w,4);
-			if(camera){ camera.setCell(x,y,z,w,0); }
+			if(camera){ camera.setCell(x,y,z,w,0, true); }
 		}
 	});
+	if(camera){
+		camera.setCell(start.x,start.y,start.z,start.w,0, true);
+		camera.setCell(end.x,end.y,end.z,end.w,2, true);
+		camera.loadMap();
+	}
 }
 
 function reset(camera, overlay, player){
@@ -40,7 +41,7 @@ function reset(camera, overlay, player){
 	const route = get_route(map);
 	const { start: {x, y, z, w}, path } = route;
 
-	mark_route(map, route);
+	mark_route(camera, map, route, 0);
 
 	camera.map = map;
 	overlay.len = path.length+1;
@@ -151,7 +152,7 @@ function main(d, o){
 		}
 
 		const { dist } = camera.castRay(player);
-		overlay.tick(player, covered, seconds);
+		overlay.tick(player, seconds);
 		overlay.reticle({ x: rx, y: ry, dist });
 	};
 
