@@ -77,7 +77,7 @@ function Camera(canvas, map, hfov){
 
 		// look up uniform locations
 		const locs = {
-			//size: gl.getUniformLocation(program, "SIZE"),
+			size: gl.getUniformLocation(program, "SIZE"),
 			map: gl.getUniformLocation(program, "u_map"),
 			color: gl.getUniformLocation(program, "u_colorscale"),
 			res: gl.getUniformLocation(program, "u_resolution"),
@@ -95,7 +95,7 @@ function Camera(canvas, map, hfov){
 		gl.uniform2f(locs.res, canvas.width, canvas.height);
 		gl.uniform1f(locs.depth, canvas.width/(2*Math.tan(hfov/2)));
 		gl.uniform3f(locs.seed, Math.random()-0.5, Math.random()-0.5, Math.random()-0.5);
-		//gl.uniform1i(locs.size, this.mapsize);
+		gl.uniform1i(locs.size, this.mapsize);
 		gl.uniform1i(locs.map, 0);
 
 		const tex = gl.createTexture();
