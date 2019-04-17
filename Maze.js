@@ -96,37 +96,60 @@ function generate(start, xsize, ysize, zsize, wsize) {
 	return grid;
 }
 
-function Maze(size){
-	this.size = size;
-	this.start = {
-		x: rand(size),
-		y: rand(size),
-		z: rand(size),
-		w: rand(size)
-	};
-	this.grid = generate(this.start,size,size,size,size);
+class Maze {
+	constructor(size) {
+		this.size = size;
+		this.start = {
+			x: rand(size),
+			y: rand(size),
+			z: rand(size),
+			w: rand(size)
+		};
+		this.grid = generate(this.start, size, size, size, size);
+	}
+	get(x, y, z, w) {
+		return this.grid[w][z][y][x];
+	}
+	set(x, y, z, w, val) {
+		return this.grid[w][z][y][x] = val;
+	}
+	cellIndex(x, y, z, w) {
+		const size = this.size;
+		const size2 = size * size;
+		const size3 = size2 * size;
+		return x * size3 + y * size2 + z * size + w;
+	}
+	getLongestPath() {
+		const path = [];
+		const { size, grid, start } = this;
+		let [farthest] = find_farthest(grid, start, size, size, size, size);
+		delete farthest.prev;
+		delete farthest.back;
+		[farthest] = find_farthest(grid, farthest, size, size, size, size);
+		while (farthest) {
+			path.push(farthest);
+			farthest = farthest.back;
+		}
+		return path;
+	}
+	flatten() {
+		const { size, grid } = this;
+		const packed = new Uint8Array(size * size * size * size);
+		let i = 0;
+		for (let x = 0; x < size; x++)
+			for (let y = 0; y < size; y++)
+				for (let z = 0; z < size; z++)
+					for (let w = 0; w < size; w++)
+						packed[i++] = grid[w][z][y][x];
+		return packed;
+	}
 }
-
-Maze.prototype.get = function(x,y,z,w){
-	return this.grid[w][z][y][x];
-}
-
-Maze.prototype.set = function(x,y,z,w,val){
-	return this.grid[w][z][y][x] = val;
-}
-
-Maze.prototype.cellIndex = function(x,y,z,w){
-	const size = this.size;
-	const size2 = size*size;
-	const size3 = size2*size;
-	return x*size3+y*size2+z*size+w;
-};
 
 function find_farthest(grid, start, xsize, ysize, zsize, wsize){
 	let cells, ncells = [start];
 	do {
 		[cells, ncells] = [ncells, []];
-		cells.forEach(function(cell){
+		for (const cell of cells) {
 			let n, {x, y, z, w} = cell;
 
 			if(cell.prev != "R"){
@@ -168,40 +191,11 @@ function find_farthest(grid, start, xsize, ysize, zsize, wsize){
 				n = (w+wsize-1)%wsize;
 				if(grid[n][z][y][x] != 255){ ncells.push({x:x,y:y,z:z,w:n,prev:"A",back:cell}); }
 			}
-		});
+		}
 	} while(ncells.length > 0);
 	return cells;
 };
 
-Maze.prototype.getLongestPath = function(){
-	const path = [];
-	const { size, grid, start } = this;
 
-	let [ farthest ] = find_farthest(grid, start, size, size, size, size);
-	delete farthest.prev;
-	delete farthest.back;
-	[ farthest ] = find_farthest(grid, farthest, size, size, size, size);
-
-	while(farthest){
-		path.push(farthest);
-		farthest = farthest.back;
-	}
-
-	return path;
-};
-
-Maze.prototype.flatten = function(){
-	const { size, grid } = this;
-	const packed = new Uint8Array(size*size*size*size);
-
-	let i = 0;
-	for(let x = 0; x < size; x++)
-	for(let y = 0; y < size; y++)
-	for(let z = 0; z < size; z++)
-	for(let w = 0; w < size; w++)
-		packed[i++] = grid[w][z][y][x];
-	
-	return packed;
-}
 	
 module.exports = Maze;

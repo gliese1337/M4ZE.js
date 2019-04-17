@@ -64,21 +64,20 @@ function cast(o, v, range, map) {
 	
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
-	let { d: xdist, s: sx, m: mx } =
+	const { d: xdist, s: sx, m: mx } =
 		cast_comp(v.x, v.y, v.z, v.w, o.x);
 	
-	let { d: ydist, s: sy, m: my } =
+	const { d: ydist, s: sy, m: my } =
 		cast_comp(v.y, v.x, v.z, v.w, o.y);
 
-	let { d: zdist, s: sz, m: mz } =
+	const { d: zdist, s: sz, m: mz } =
 		cast_comp(v.z, v.x, v.y, v.w, o.z);
 
-	let { d: wdist, s: sw, m: mw } =
+	const { d: wdist, s: sw, m: mw } =
 		cast_comp(v.w, v.x, v.y, v.z, o.w);
 
 	let value, dim, distance;
-	for(let i = 0; i < 1000; i++) {
-		// Find the next closest cell boundary
+	do {// Find the next closest cell boundary
 		// and increment distances appropriately
 		if(xdist < ydist && xdist < zdist && xdist < wdist){		
 			dim = 1*sx;
@@ -103,10 +102,7 @@ function cast(o, v, range, map) {
 		}
 
 		value = get_cell(map, mx, my, mz, mw);
-		if(value == 255 || distance >= range){
-			break;
-		}
-	}
+	} while(value != 255 && distance < range);
 
 	return {
 		dim: dim,
