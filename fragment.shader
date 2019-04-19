@@ -1,5 +1,5 @@
 #version 300 es
-precision mediump float;
+precision highp float;
 
 //const int SIZE = 5;
 uniform int SIZE;
@@ -19,8 +19,8 @@ uniform sampler2D u_map;
 
 out vec4 outColor;
 
-int get_cell(vec4 m){
-	ivec4 i = ivec4(mod(m,float(SIZE)));
+int get_cell(ivec4 m){
+	ivec4 i = m % SIZE;
 	float r = texelFetch(u_map, ivec2(i.x*SIZE3+i.y*SIZE2+i.z*SIZE+i.w, 0), 0).r;
 	return int(r * 255.0);
 }
@@ -203,18 +203,19 @@ vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float dist){
 
 // Find the distance to the next cell boundary
 // for a particular vector component
-float cast_comp(vec4 v, float o, out float sign, out float m){
-	float delta;
+float cast_comp(vec4 v, float o, out int sign, out int m){
+	float delta, fm;
 	if(v.x > 0.0){
-		sign = 1.0;
-		m = floor(o);
-		delta = m + 1.0 - o;
+		sign = 1;
+		fm = floor(o);
+		delta = fm + 1.0 - o;
 	}else{
-		sign = -1.0;
-		m = ceil(o - 1.0);
-		delta = m - o;
+		sign = -1;
+		fm = ceil(o - 1.0);
+		delta = fm - o;
 	}
 
+	m = int(fm);
 	return length(vec4(delta,delta*v.yzw/v.x));
 }
 
@@ -234,7 +235,7 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
-	vec4 s, m;
+	ivec4 s, m;
 	vec4 dists = vec4(
 		cast_comp(v.xyzw, o.x, s.x, m.x),
 		cast_comp(v.yxzw, o.y, s.y, m.y),
