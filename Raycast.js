@@ -64,16 +64,16 @@ function cast(o, v, range, map) {
 	
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
-	const { d: xdist, s: sx, m: mx } =
+	let { d: xdist, s: sx, m: mx } =
 		cast_comp(v.x, v.y, v.z, v.w, o.x);
 	
-	const { d: ydist, s: sy, m: my } =
+	let { d: ydist, s: sy, m: my } =
 		cast_comp(v.y, v.x, v.z, v.w, o.y);
 
-	const { d: zdist, s: sz, m: mz } =
+	let { d: zdist, s: sz, m: mz } =
 		cast_comp(v.z, v.x, v.y, v.w, o.z);
 
-	const { d: wdist, s: sw, m: mw } =
+	let { d: wdist, s: sw, m: mw } =
 		cast_comp(v.w, v.x, v.y, v.z, o.w);
 
 	let value, dim, distance;
