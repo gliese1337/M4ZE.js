@@ -11,7 +11,7 @@ function createWindow(){
 		height: 600,
 		webPreferences: { nodeIntegration: true },
 	});
-	win.setMenu(null);
+	//win.setMenu(null);
 
 	win.webContents.openDevTools();
 

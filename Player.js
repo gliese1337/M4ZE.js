@@ -1,17 +1,38 @@
 const cast = require("./Raycast.js");
+const { vec_rot, normalize, orthogonalize } = require('./Vectors.js');
+
+const planes = {x:'rgt',y:'up',z:'fwd',w:'ana'};
+const planeIndices = {x:0,y:1,z:2,w:3};
+const basis = [
+	{ x: 1, y: 0, z: 0, w: 0 },
+	{ x: 0, y: 1, z: 0, w: 0 },
+	{ x: 0, y: 0, z: 1, w: 0 },
+	{ x: 0, y: 0, z: 0, w: 1 },
+];
+
+const turnRate = Math.PI / 2.5;
+
+function rotArray(arr, count) {
+	arr = arr.slice();
+	count -= arr.length * Math.floor(count / arr.length);
+	arr.push(...arr.splice(0, count));
+	return arr;
+  }
 
 class Player {
-	constructor(x, y, z, w) {
-		"use strict";
+	constructor({x, y, z, w}, ana) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.w = w;
 		this.speed = 0;
-		this.rgt = { x: 1, y: 0, z: 0, w: 0 };
-		this.up = { x: 0, y: 1, z: 0, w: 0 };
-		this.fwd = { x: 0, y: 0, z: 1, w: 0 };
-		this.ana = { x: 0, y: 0, z: 0, w: 1 };
+		const b = rotArray(basis, (planeIndices[ana] + 1) % 4);
+		[
+			this.rgt,
+			this.up,
+			this.fwd,
+			this.ana,
+		] = b;
 	}
 	rotate(v, k, angle) {
 		"use strict";
@@ -33,7 +54,6 @@ class Player {
 		this.ana = ana;
 	}
 	translate(seconds, map) {
-		"use strict";
 		const SIZE = map.size;
 		const fwd = this.fwd;
 		const inc = this.speed * seconds;
@@ -51,16 +71,16 @@ class Player {
 		const zmax = Math.max(Math.abs(fwd.z * dist) - .001, 0);
 		const wmax = Math.max(Math.abs(fwd.w * dist) - .001, 0);
 		if (Math.abs(dx) > xmax) {
-			dx = (dx > 0 ? xmax : -xmax);
+			dx = Math.sign(dx) * xmax;
 		}
 		if (Math.abs(dy) > ymax) {
-			dy = (dy > 0 ? ymax : -ymax);
+			dy = Math.sign(dy) * ymax;
 		}
 		if (Math.abs(dz) > zmax) {
-			dz = (dz > 0 ? zmax : -zmax);
+			dz = Math.sign(dz) * zmax;
 		}
 		if (Math.abs(dw) > wmax) {
-			dw = (dw > 0 ? wmax : -wmax);
+			dw = Math.sign(dw) * wmax;
 		}
 		this.x = (this.x + dx + SIZE) % SIZE;
 		this.y = (this.y + dy + SIZE) % SIZE;
@@ -68,20 +88,21 @@ class Player {
 		this.w = (this.w + dw + SIZE) % SIZE;
 	}
 	update_speed(controls, seconds) {
+		const maxs = controls.mouse ? 0.5 : 1;
 		if (controls.fwd) {
 			this.speed += 0.75 * seconds;
-			if (this.speed > 0.75) {
-				this.speed = 0.75;
+			if (this.speed > maxs) {
+				this.speed = maxs;
 			}
 		}
 		else if (controls.bak) {
 			this.speed -= 0.75 * seconds;
-			if (this.speed < -0.75) {
-				this.speed = -0.75;
+			if (this.speed < -maxs) {
+				this.speed = -maxs;
 			}
 		}
 		else {
-			this.speed /= Math.pow(100, seconds);
+			this.speed /= Math.pow(75, seconds);
 			if (Math.abs(this.speed) < .01) {
 				this.speed = 0;
 			}
@@ -90,37 +111,37 @@ class Player {
 	update(controls, map, seconds) {
 		let moved = false;
 		if (controls.pup) {
-			this.rotate(controls.vp, controls.kp, seconds * Math.PI / 3);
+			this.rotate(controls.vp, controls.kp, seconds * turnRate);
 			moved = true;
 		}
 		else if (controls.pdn) {
-			this.rotate(controls.kp, controls.vp, seconds * Math.PI / 3);
+			this.rotate(controls.kp, controls.vp, seconds * turnRate);
 			moved = true;
 		}
 		if (controls.yrt) {
-			this.rotate(controls.vy, controls.ky, seconds * Math.PI / 3);
+			this.rotate(controls.vy, controls.ky, seconds * turnRate);
 			moved = true;
 		}
 		else if (controls.ylt) {
-			this.rotate(controls.ky, controls.vy, seconds * Math.PI / 3);
+			this.rotate(controls.ky, controls.vy, seconds * turnRate);
 			moved = true;
 		}
 		if (controls.rrt) {
-			this.rotate(controls.vr, controls.kr, seconds * Math.PI / 3);
+			this.rotate(controls.vr, controls.kr, seconds * turnRate);
 			moved = true;
 		}
 		else if (controls.rlt) {
-			this.rotate(controls.kr, controls.vr, seconds * Math.PI / 3);
+			this.rotate(controls.kr, controls.vr, seconds * turnRate);
 			moved = true;
 		}
 		if (controls.mouse) {
 			const { clipX: x, clipY: y } = controls;
 			moved = true;
 			if (x !== 0) {
-				this.rotate('z', 'x', seconds * x * Math.PI / 3);
+				this.rotate('z', 'x', seconds * x * turnRate);
 			}
 			if (y !== 0) {
-				this.rotate('y', 'z', seconds * y * Math.PI / 3);
+				this.rotate('y', 'z', seconds * y * turnRate);
 			}
 		}
 		if (moved) {
@@ -133,40 +154,6 @@ class Player {
 		}
 		return moved;
 	}
-}
-
-//Rotate a vector in the plane defined by itself and another vector
-function vec_rot(v, k, t){
-	"use strict";
-	const cos = Math.cos(t);
-	const sin = Math.sin(t);
-
-	return {
-		x: v.x*cos + k.x*sin,
-		y: v.y*cos + k.y*sin,
-		z: v.z*cos + k.z*sin,
-		w: v.w*cos + k.w*sin
-	};
-}
-
-const planes = {x:'rgt',y:'up',z:'fwd',w:'ana'};
-
-function normalize(v){
-	const { x, y, z, w} = v;
-	const len = Math.sqrt(x*x+y*y+z*z+w*w);
-	return { x: x/len, y: y/len, z: z/len, w: w/len };
-}
-
-function orthogonalize(v,k){
-    const { x: vx, y: vy, z: vz, w: vw } = v;
-    const { x: kx, y: ky, z: kz, w: kw } = k;
-    const vk = vx*kx+vy*ky+vz*kz+vw*kw;
-    return {
-        x: vx - kx*vk,
-        y: vy - ky*vk,
-        z: vz - kz*vk,
-        w: vw - kw*vk
-    };
 }
 
 module.exports = Player;

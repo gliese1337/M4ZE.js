@@ -1,10 +1,11 @@
-const SIZE = 10;
+const SIZE = 3;
 const Camera = require("./GLCamera.js");
 const Overlay = require("./Overlay.js");
 const Player = require("./Player.js");
 const Controls = require("./Controls.js");
 const GameLoop = require("./GameLoop.js");
 const Maze = require("./Maze.js");
+const { vec_rot, normalize, orthogonalize, angle_between } = require('./Vectors.js');
 
 function get_route(map){
 	const path = map.getLongestPath();
@@ -63,17 +64,44 @@ function reverse(camera, map, route, skip, overlay){
 	overlay.progress = 0;
 }
 
+function getStartAnaAxis(x, y, z, w, map) {
+	if(map.get((x+1)%map.size, y, z, w) === 1 || map.get((x+1+map.size)%map.size, y, z, w) === 1) return 'x';
+	if(map.get(x, (y+1)%map.size, z, w) === 1 || map.get(x, (y-1+map.size)%map.size, z, w) === 1) return 'y';
+	if(map.get(x, y, (z+1)%map.size, w) === 1 || map.get(x, y, (z-1+map.size)%map.size, w) === 1) return 'z';
+	return 'w';
+}
+
+function getDirectionToPath(pos, cell) {
+	const diffdim = (d) =>
+		Math.abs(cell[d] - Math.floor(pos[d])) > 1 ?
+		pos[d] - cell[d] - 0.5 : cell[d] - pos[d] + 0.5;
+
+	return normalize({
+		x: diffdim('x'),
+		y: diffdim('y'),
+		z: diffdim('z'),
+		w: diffdim('w'),
+	});
+}
+
 function main(d, o){
 	"use strict";
 
-	let map = new Maze(SIZE);
-	let route = get_route(map);
+	const map = new Maze(SIZE);
+	const route = get_route(map);
 	mark_route(null, map, route, 0);
 
 	let rounds = 0;
 
 	let {start: {x, y, z, w}, path} = route;
-	const player = new Player(x+.5, y+.5, z+.5, w+.5);
+	const ana = getStartAnaAxis(x, y, z, w, map);
+	const player = new Player({
+		x: x+Math.random(),
+		y: y+Math.random(),
+		z: z+Math.random(),
+		w: w+Math.random(),
+	}, ana);
+
 	const controls = new Controls(d.width, d.height);
 	const camera = new Camera(d, map, Math.PI / 1.5);
 	const overlay = new Overlay(o, path.length+1);
@@ -87,8 +115,7 @@ function main(d, o){
 		controls.height = h;
 	},false);
 
-	let covered = 0;
-	let states = controls.states;
+	const states = controls.states;
 
 	const update_zoom = seconds => {
 		if(states.zoomin && camera.fov < Math.PI){
@@ -101,6 +128,9 @@ function main(d, o){
 		}
 		return false;
 	};
+
+	
+	let player_control = false;
 
 	const update_cell = () => {
 		const cx = Math.floor(player.x);
@@ -116,13 +146,15 @@ function main(d, o){
 				if(rounds < path.length){
 					console.log("finished");
 					reverse(camera, map, route, ++rounds, overlay);
+					player_control = false;
 				}else{
 					rounds = 0;
 					({map, route} = reset(camera, overlay, player));
+					player_control = false;
 				}
 				return true;
 			}else if(val === 1 || val == 4){
-				let nv = states.mark?3:0;
+				const nv = states.mark?3:0;
 				map.set(x,y,z,w,nv);
 				camera.setCell(x,y,z,w,nv);
 				overlay.progress++;
@@ -156,13 +188,49 @@ function main(d, o){
 		overlay.reticle({ x: rx, y: ry, dist });
 	};
 
-	const loop = new GameLoop(seconds => {
-		let change = player.update(states, map, seconds);
-		change = update_zoom(seconds) || change;
-		change = update_cell() || change;
+	const loop = new GameLoop((seconds) => {
+		if(player_control){
+			let change = player.update(states, map, seconds);
+			change = update_zoom(seconds) || change;
+			change = update_cell() || change;
 
-		if(change){ camera.render(player); }
-		update_overlay(seconds);
+			if(change){ camera.render(player); }
+			update_overlay(seconds);
+		}else{
+			let change = false;
+			const fwd = getDirectionToPath(player, route.path[1]);
+			console.log({x: Math.floor(player.x), y: Math.floor(player.y), z: Math.floor(player.z), w: Math.floor(player.w)}, route.path[0]);
+			const angle = Math.abs(angle_between(fwd, player.fwd));
+			if(angle > 0){
+				const k = normalize(orthogonalize(fwd, player.fwd));
+				const t =  angle > 0.0125 ? seconds * 0.5 : angle;
+				player.fwd = vec_rot(player.fwd, k, t);
+				player.rotate('x', 'y', t);
+				player.renormalize();
+				change = true;
+			}
+
+			const update_pos = (d) => {
+				const dd = 0.5 - (player[d] % 1);
+				if(Math.abs(dd) > 0.01){
+					player[d] += seconds * dd;
+					change = true;
+				}
+			};
+
+			update_pos('x');
+			update_pos('y');
+			update_pos('z');
+			update_pos('w');
+
+			if(!change){
+				console.log("Transferring control to the player");
+				player_control = true;
+			}
+
+			camera.render(player);
+			update_overlay(seconds);
+		}
 	});
 
 	camera.onready(() => {

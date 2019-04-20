@@ -38,7 +38,7 @@ class Overlay {
 			ctx.textAlign = "left";
 			ctx.textBaseline = "bottom";
 			ctx.fillStyle = "#00FF00";
-			let d = Math.round(100 * dist) / 10;
+			const d = Math.round(100 * dist) / 10;
 			ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
 		}
 	}
@@ -114,8 +114,7 @@ class Overlay {
 			fpsw.shift();
 		}
 		fpsw.push(1 / seconds);
-		let fps = fpsw.reduce((a, n) => a + n) / fpsw.length;
-		fps = Math.round(fps * 10) / 10;
+		const fps = Math.round(10 * fpsw.reduce((a, n) => a + n) / fpsw.length) / 10;
 		ctx.clearRect(0, 0, width, height);
 		ctx.font = "10px Calibri";
 		ctx.fillStyle = "#FFFFFF";
