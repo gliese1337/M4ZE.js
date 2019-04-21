@@ -40,7 +40,6 @@ class Player {
 		k = planes[k];
 		this[v] = vec_rot(this[v], this[k], angle);
 		this[k] = vec_rot(this[k], this[v], -angle);
-		//console.log("Rotate",v,k);
 	}
 	renormalize() {
 		let { rgt, up, fwd, ana } = this;
@@ -148,7 +147,7 @@ class Player {
 			this.renormalize();
 		}
 		this.update_speed(controls, seconds);
-		if (this.speed != 0) {
+		if (this.speed !== 0) {
 			this.translate(seconds, map);
 			moved = true;
 		}

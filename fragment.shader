@@ -304,9 +304,9 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 	return false;
 }
 
-const float range = 10.0;
-
 void main(){
+	const float range = 10.0;
+
 	SIZE2 = SIZE*SIZE;
 	SIZE3 = SIZE*SIZE2;
 
@@ -320,8 +320,10 @@ void main(){
 	float dist = 0.0;
 	int dim;
 
-	for(int i = 0; i < 3; i++) {
-		if(!cast_vec(o, v, dim, dist, range, tints)) break;
+	bool reflected = cast_vec(o, v, dim, dist, range, tints);
+	gl_FragDepth = dist;
+	while(reflected) {
+		reflected = cast_vec(o, v, dim, dist, range, tints);
 	}
 
 	v = o + dist * v;

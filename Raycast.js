@@ -102,7 +102,7 @@ function cast(o, v, range, map) {
 		}
 
 		value = get_cell(map, mx, my, mz, mw);
-	} while(value != 128 && distance < range);
+	} while(value !== 128 && distance < range);
 
 	return {
 		dim: dim,

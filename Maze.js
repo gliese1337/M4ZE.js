@@ -150,52 +150,96 @@ function find_farthest(grid, start, xsize, ysize, zsize, wsize){
 	do {
 		[cells, ncells] = [ncells, []];
 		for (const cell of cells) {
-			let n, {x, y, z, w} = cell;
+			let {x, y, z, w} = cell;
 
-			if(cell.prev != "R"){
-				n = (x+1)%xsize;
-				if(grid[w][z][y][n] != 128){ ncells.push({x:n,y:y,z:z,w:w,prev:"L",back:cell}); }
+			if(cell.prev !== "R"){
+				const n = (x+1)%xsize;
+				if(grid[w][z][y][n] != 128)
+					ncells.push({x:n,y,z,w,prev:"L",back:cell});
 			}
 
-			if(cell.prev != "L"){
-				n = (x+xsize-1)%xsize;
-				if(grid[w][z][y][n] != 128){ ncells.push({x:n,y:y,z:z,w:w,prev:"R",back:cell}); }
+			if(cell.prev !== "L"){
+				const n = (x+xsize-1)%xsize;
+				if(grid[w][z][y][n] != 128)
+					ncells.push({x:n,y,z,w,prev:"R",back:cell});
 			}
 
-			if(cell.prev != "U"){
-				n = (y+1)%ysize;
-				if(grid[w][z][n][x] != 128){ ncells.push({x:x,y:n,z:z,w:w,prev:"D",back:cell}); }
+			if(cell.prev !== "U"){
+				const n = (y+1)%ysize;
+				if(grid[w][z][n][x] != 128)
+					ncells.push({x,y:n,z,w,prev:"D",back:cell});
 			}
 			
-			if(cell.prev != "D"){
-				n = (y+ysize-1)%ysize;
-				if(grid[w][z][n][x] != 128){ ncells.push({x:x,y:n,z:z,w:w,prev:"U",back:cell}); }
+			if(cell.prev !== "D"){
+				const n = (y+ysize-1)%ysize;
+				if(grid[w][z][n][x] != 128)
+					ncells.push({x,y:n,z,w,prev:"U",back:cell});
 			}
 
-			if(cell.prev != "F"){
-				n = (z+1)%zsize;
-				if(grid[w][n][y][x] != 128){ ncells.push({x:x,y:y,z:n,w:w,prev:"B",back:cell}); }
+			if(cell.prev !== "F"){
+				const n = (z+1)%zsize;
+				if(grid[w][n][y][x] != 128)
+					ncells.push({x,y,z:n,w,prev:"B",back:cell});
 			}
 			
-			if(cell.prev != "B"){
-				n = (z+zsize-1)%zsize;
-				if(grid[w][n][y][x] != 128){ ncells.push({x:x,y:y,z:n,w:w,prev:"F",back:cell}); }
+			if(cell.prev !== "B"){
+				const n = (z+zsize-1)%zsize;
+				if(grid[w][n][y][x] != 128)
+					ncells.push({x,y,z:n,w,prev:"F",back:cell});
 			}
 
-			if(cell.prev != "A"){
-				n = (w+1)%wsize;
-				if(grid[n][z][y][x] != 128){ ncells.push({x:x,y:y,z:z,w:n,prev:"K",back:cell}); }
+			if(cell.prev !== "A"){
+				const n = (w+1)%wsize;
+				if(grid[n][z][y][x] != 128)
+					ncells.push({x,y,z,w:n,prev:"K",back:cell});
 			}
 			
-			if(cell.prev != "K"){
-				n = (w+wsize-1)%wsize;
-				if(grid[n][z][y][x] != 128){ ncells.push({x:x,y:y,z:z,w:n,prev:"A",back:cell}); }
+			if(cell.prev !== "K"){
+				const n = (w+wsize-1)%wsize;
+				if(grid[n][z][y][x] != 128)
+					ncells.push({x,y,z,w:n,prev:"A",back:cell});
 			}
 		}
 	} while(ncells.length > 0);
 	return cells;
 };
 
+/*
+const triples = [
+	["R","L","x"],
+	["U","D","y"],
+	["F","B","z"],
+	["A","K","w"],
+];
 
-	
+function find_farthest(grid, start, size){
+	let cells, ncells = [start];
+	do {
+		[cells, ncells] = [ncells, []];
+		for (const cell of cells) {
+			const back = cell;
+			let {x, y, z, w} = cell;
+
+			for(const [a,b,c] of triples){
+				const d = cell[c];
+				if(cell.prev !== a){
+					const nc = {x,y,z,w,back,prev:b};
+					nc[c] = (d+1)%size;
+					if(grid[nc.w][nc.z][nc.y][nc.x] !== 128)
+						ncells.push(nc);
+				}
+
+				if(cell.prev !== b){
+					const nc = {x,y,z,w,back,prev:b};
+					nc[c] = (d+size-1)%size;
+					if(grid[nc.w][nc.z][nc.y][nc.x] !== 128)
+						ncells.push(nc);
+				}
+			}
+		}
+	} while(ncells.length > 0);
+	return cells;
+};
+*/
+
 module.exports = Maze;
