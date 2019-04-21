@@ -10,15 +10,15 @@ function generate(start, xsize, ysize, zsize, wsize) {
 
 	function isSafe(x, y, z, w){
 		return 8 == (
-			(grid[w][z][y][x] == 255 ? 1 : 0) +
-			(grid[w][z][y][(x+1)%xsize] == 255 ? 1 : 0) +
-			(grid[w][z][y][(x+xsize-1)%xsize] == 255 ? 1 : 0) +
-			(grid[w][z][(y+1)%ysize][x] == 255 ? 1 : 0) +
-			(grid[w][z][(y+ysize-1)%ysize][x] == 255 ? 1 : 0) +
-			(grid[w][(z+1)%zsize][y][x] == 255 ? 1 : 0) +
-			(grid[w][(z+zsize-1)%zsize][y][x] == 255 ? 1 : 0) +
-			(grid[(w+1)%wsize][z][y][x] == 255 ? 1 : 0) +
-			(grid[(w+wsize-1)%wsize][z][y][x] == 255 ? 1 : 0)
+			(grid[w][z][y][x] == 128 ? 1 : 0) +
+			(grid[w][z][y][(x+1)%xsize] == 128 ? 1 : 0) +
+			(grid[w][z][y][(x+xsize-1)%xsize] == 128 ? 1 : 0) +
+			(grid[w][z][(y+1)%ysize][x] == 128 ? 1 : 0) +
+			(grid[w][z][(y+ysize-1)%ysize][x] == 128 ? 1 : 0) +
+			(grid[w][(z+1)%zsize][y][x] == 128 ? 1 : 0) +
+			(grid[w][(z+zsize-1)%zsize][y][x] == 128 ? 1 : 0) +
+			(grid[(w+1)%wsize][z][y][x] == 128 ? 1 : 0) +
+			(grid[(w+wsize-1)%wsize][z][y][x] == 128 ? 1 : 0)
 		);				
 	}
 
@@ -30,7 +30,7 @@ function generate(start, xsize, ysize, zsize, wsize) {
 			let ylevel = [];
 			for (let y = 0; y < ysize; y++) {
 				let xlevel = [];
-				for (let x = 0; x < xsize; x++) { xlevel.push(255); }
+				for (let x = 0; x < xsize; x++) { xlevel.push(128); }
 				ylevel.push(xlevel);
 			}
 			zlevel.push(ylevel)
@@ -154,42 +154,42 @@ function find_farthest(grid, start, xsize, ysize, zsize, wsize){
 
 			if(cell.prev != "R"){
 				n = (x+1)%xsize;
-				if(grid[w][z][y][n] != 255){ ncells.push({x:n,y:y,z:z,w:w,prev:"L",back:cell}); }
+				if(grid[w][z][y][n] != 128){ ncells.push({x:n,y:y,z:z,w:w,prev:"L",back:cell}); }
 			}
 
 			if(cell.prev != "L"){
 				n = (x+xsize-1)%xsize;
-				if(grid[w][z][y][n] != 255){ ncells.push({x:n,y:y,z:z,w:w,prev:"R",back:cell}); }
+				if(grid[w][z][y][n] != 128){ ncells.push({x:n,y:y,z:z,w:w,prev:"R",back:cell}); }
 			}
 
 			if(cell.prev != "U"){
 				n = (y+1)%ysize;
-				if(grid[w][z][n][x] != 255){ ncells.push({x:x,y:n,z:z,w:w,prev:"D",back:cell}); }
+				if(grid[w][z][n][x] != 128){ ncells.push({x:x,y:n,z:z,w:w,prev:"D",back:cell}); }
 			}
 			
 			if(cell.prev != "D"){
 				n = (y+ysize-1)%ysize;
-				if(grid[w][z][n][x] != 255){ ncells.push({x:x,y:n,z:z,w:w,prev:"U",back:cell}); }
+				if(grid[w][z][n][x] != 128){ ncells.push({x:x,y:n,z:z,w:w,prev:"U",back:cell}); }
 			}
 
 			if(cell.prev != "F"){
 				n = (z+1)%zsize;
-				if(grid[w][n][y][x] != 255){ ncells.push({x:x,y:y,z:n,w:w,prev:"B",back:cell}); }
+				if(grid[w][n][y][x] != 128){ ncells.push({x:x,y:y,z:n,w:w,prev:"B",back:cell}); }
 			}
 			
 			if(cell.prev != "B"){
 				n = (z+zsize-1)%zsize;
-				if(grid[w][n][y][x] != 255){ ncells.push({x:x,y:y,z:n,w:w,prev:"F",back:cell}); }
+				if(grid[w][n][y][x] != 128){ ncells.push({x:x,y:y,z:n,w:w,prev:"F",back:cell}); }
 			}
 
 			if(cell.prev != "A"){
 				n = (w+1)%wsize;
-				if(grid[n][z][y][x] != 255){ ncells.push({x:x,y:y,z:z,w:n,prev:"K",back:cell}); }
+				if(grid[n][z][y][x] != 128){ ncells.push({x:x,y:y,z:z,w:n,prev:"K",back:cell}); }
 			}
 			
 			if(cell.prev != "K"){
 				n = (w+wsize-1)%wsize;
-				if(grid[n][z][y][x] != 255){ ncells.push({x:x,y:y,z:z,w:n,prev:"A",back:cell}); }
+				if(grid[n][z][y][x] != 128){ ncells.push({x:x,y:y,z:z,w:n,prev:"A",back:cell}); }
 			}
 		}
 	} while(ncells.length > 0);

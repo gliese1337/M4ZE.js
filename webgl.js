@@ -199,9 +199,8 @@ function main(d, o){
 		}else{
 			let change = false;
 			const fwd = getDirectionToPath(player, route.path[1]);
-			console.log({x: Math.floor(player.x), y: Math.floor(player.y), z: Math.floor(player.z), w: Math.floor(player.w)}, route.path[0]);
 			const angle = Math.abs(angle_between(fwd, player.fwd));
-			if(angle > 0){
+			if(angle > 1e-5){
 				const k = normalize(orthogonalize(fwd, player.fwd));
 				const t =  angle > 0.0125 ? seconds * 0.5 : angle;
 				player.fwd = vec_rot(player.fwd, k, t);
