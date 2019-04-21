@@ -34,10 +34,6 @@ vec4 permute(vec4 x){
 	return mod(((x*34.0)+1.0)*x, 289.0);
 }
 
-vec4 fastInvSqrt(vec4 r){
-	return 1.79284291400159 - 0.85373472095314 * r;
-}
-
 float snoise(vec3 v){
 	const vec2 C = vec2(1.0/6.0, 1.0/3.0) ;
 	const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
@@ -90,7 +86,7 @@ float snoise(vec3 v){
 	vec3 p3 = vec3(a1.zw,h.w);
 
 	//Normalise gradients
-	vec4 norm = fastInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+	vec4 norm = inversesqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
 	p0 *= norm.x;
 	p1 *= norm.y;
 	p2 *= norm.z;
@@ -201,6 +197,17 @@ vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float dist){
  * RAYCASTING
  */
 
+bool isectSphere(vec4 center, float r, vec4 lorigin, vec4 ldir, out vec4 isect) {
+	vec4 oc = lorigin - center;
+	float loc = dot(ldir, oc);
+	float det = loc*loc + r*r - dot(oc, oc);
+	if(det <= 0.0) return false;
+	float sqrtdet = sqrt(det);
+	float d = min(sqrtdet - loc, -sqrtdet - loc);
+	isect = lorigin + d * ldir;
+	return true;
+}
+
 // Find the distance to the next cell boundary
 // for a particular vector component
 float cast_comp(vec4 v, float o, out float sign, out float m){
@@ -222,7 +229,7 @@ float cast_comp(vec4 v, float o, out float sign, out float m){
 // in each dimension. We move to whichever is closer and
 // check for a wall. Then we repeat until we've traced the
 // entire length of the ray.
-vec3 cast_vec(vec4 o, vec4 v, float range){
+bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float range, inout vec3 tints){
 
 	v = normalize(v);
 
@@ -242,14 +249,7 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 		cast_comp(v.wxyz, o.w, s.w, m.w)
 	);
 
-	// Keep track of total distance,
-	// and distance in colored cells.
-	float dist = 0.0;
-	float bluefrac = 0.0;
-	float yellowfrac = 0.0;
-	float redfrac = 0.0;
-
-	int value, dim;
+	int value = get_cell(m);
 
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
@@ -280,33 +280,31 @@ vec3 cast_vec(vec4 o, vec4 v, float range){
 			dists.w += deltas.w;
 		}
 
-		value = get_cell(m);
-		if(value == 1){
-			bluefrac += inc;
-		}else if(value == 2){
-			yellowfrac += inc;
-		}else if(value == 3){
-			redfrac += inc;
+		switch(value){
+			case 1: tints.x += inc; // blue
+			break;
+			case 2:	tints.y += inc; // yellow
+			break;
+			case 3: tints.z += inc; // red
 		}
-	} while(value != 255 && dist < range);
 
-	vec4 ray = o + dist *  v;
-	vec3 tex = dist >= range ? vec3(0,0,0) : calc_tex(dim, ray);
+		value = get_cell(m);
+		
+		if((value & 64) > 0){
+			vec4 center = vec4(0.5);
+			vec4 l = fract(o + dist * v);
+			if(isectSphere(center, 0.5, l, v, o)) {
+				v = reflect(l, normalize(o - center));
+				return true;
+			}
+		}
 
-	float clear = dist - yellowfrac - bluefrac - redfrac;
+	} while(value != 128 && dist < range);
 
-	clear /= dist;
-	yellowfrac /= dist;
-	bluefrac /= dist;
-	redfrac /= dist;
-
-	tex = tex * clear
-		+ vec3(0.71,0.71,0.0)*yellowfrac
-		+ vec3(0.0,0.0,1.0)*bluefrac
-		+ vec3(1.0,0.0,0.0)*redfrac;
-
-	return add_light(u_fwd, v, tex, dim, dist);
+	return false;
 }
+
+const float range = 10.0;
 
 void main(){
 	SIZE2 = SIZE*SIZE;
@@ -314,7 +312,32 @@ void main(){
 
 	vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
+	
+	vec4 o = u_origin;
+	vec4 v = ray;
 
-	vec3 color = cast_vec(u_origin, ray, 10.0);
-	outColor = vec4(color, 1.0);
+	vec3 tints = vec3(0);
+	float dist = 0.0;
+	int dim;
+
+	for(int i = 0; i < 3; i++) {
+		if(!cast_vec(o, v, dim, dist, range, tints)) break;
+	}
+
+	v = o + dist * v;
+	vec3 tex = dist >= range ? vec3(0) : calc_tex(dim, v);
+
+	float tintdist = length(tints);
+	if(tintdist > 0.0){
+		tints = tints / tintdist;
+
+		vec3 tint = vec3(0.0,0.0,1.0)*tints.x
+				+ vec3(0.71,0.71,0.0)*tints.y
+				+ vec3(1.0,0.0,0.0)*tints.z;
+
+		tex = mix(tex, tint, min(tintdist, 0.5)); 
+	}
+
+	tex = add_light(u_fwd, ray, tex, dim, dist);
+	outColor = vec4(tex, 1.0);
 }
