@@ -14,10 +14,6 @@ class Camera {
 		Object.defineProperties(this, {
 			map: {
 				get: () => map,
-				set: function (nm) {
-					map = nm;
-					gl.uniform1iv(this.locs.map, map.flatten());
-				}
 			},
 			fov: {
 				get: () => hfov,
@@ -119,12 +115,13 @@ class Camera {
 		return cast(player, ray, this.map.size * 2, this.map);
 	}
 	resize(w, h) {
-		const { res, depth } = this.locs;
-		this.canvas.width = w;
-		this.canvas.height = h;
-		this.gl.viewport(0, 0, w, h);
-		this.gl.uniform2f(res, w, h);
-		this.gl.uniform1f(depth, w / (2 * Math.tan(this.fov / 2)));
+		const { gl, canvas, fov, locs: { res, depth } } = this;
+		canvas.width = w;
+		canvas.height = h;
+		gl.viewport(0, 0, w, h);
+		gl.uniform2f(res, w, h);
+		gl.uniform1f(depth, w / (2 * Math.tan(fov / 2)));
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
 	setCell(x, y, z, w, val, defer = false) {
 		this.mapdata[this.map.cellIndex(x, y, z, w)] = val;
