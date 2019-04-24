@@ -26,16 +26,14 @@ class Player {
 		this.z = z;
 		this.w = w;
 		this.speed = 0;
-		const b = rotArray(basis, (planeIndices[ana] + 1) % 4);
 		[
 			this.rgt,
 			this.up,
 			this.fwd,
 			this.ana,
-		] = b;
+		] = rotArray(basis, (planeIndices[ana] + 1) % 4);
 	}
 	rotate(v, k, angle) {
-		"use strict";
 		v = planes[v];
 		k = planes[k];
 		this[v] = vec_rot(this[v], this[k], angle);

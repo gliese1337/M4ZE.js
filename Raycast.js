@@ -38,7 +38,7 @@ function cast_comp(x, y, z, w, o){
 	w = w*scale||0;
 
 	return {
-		s: s, m: m,
+		s, m,
 		d: Math.sqrt(delta*delta + y*y + z*z + w*w)
 	};
 }
