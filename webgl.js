@@ -133,10 +133,10 @@ function main(d, o){
 	let player_control = false;
 
 	const update_cell = () => {
-		const cx = Math.floor(player.x);
-		const cy = Math.floor(player.y);
-		const cz = Math.floor(player.z);
-		const cw = Math.floor(player.w);
+		const cx = ((Math.floor(player.x)%map.size)+map.size)%map.size;
+		const cy = ((Math.floor(player.y)%map.size)+map.size)%map.size;
+		const cz = ((Math.floor(player.z)%map.size)+map.size)%map.size;
+		const cw = ((Math.floor(player.w)%map.size)+map.size)%map.size;
 
 		const val = map.get(cx,cy,cz,cw);
 		if(cx !== x || cy !== y || cz !== z || cw !== w){
@@ -183,14 +183,15 @@ function main(d, o){
 			if(Math.abs(ry) < .01){ ry = 0; }
 		}
 
-		const { dist } = camera.castRay(player);
+		const dist = camera.getDepth(Math.round(rx + camera.canvas.width / 2), Math.round(ry + camera.canvas.height / 2));
 		overlay.tick(player, seconds);
 		overlay.reticle({ x: rx, y: ry, dist });
 	};
 
 	const loop = new GameLoop((seconds) => {
 		if(player_control){
-			let change = player.update(states, map, seconds);
+			const maxdist = camera.getDepth(Math.floor(camera.canvas.width / 2), Math.floor(camera.canvas.height / 2));
+			let change = player.update(states, seconds, maxdist);
 			change = update_zoom(seconds) || change;
 			change = update_cell() || change;
 

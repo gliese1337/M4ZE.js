@@ -17,7 +17,8 @@ uniform vec3 u_seed;
 uniform sampler2D u_colorscale;
 uniform sampler2D u_map;
 
-out vec4 outColor;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 fragDepth;
 
 int get_cell(vec4 m){
 	ivec4 i = ivec4(mod(m,float(SIZE)));
@@ -311,7 +312,7 @@ void main(){
 	vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
 	
-	vec4 o = u_origin;
+	vec4 o = mod(u_origin, float(SIZE));
 	vec4 v = ray;
 
 	vec3 tints = vec3(0);
@@ -319,7 +320,7 @@ void main(){
 	int dim;
 
 	bool reflected = cast_vec(o, v, dim, dist, range, tints);
-	gl_FragDepth = dist;
+	fragDepth = vec4(clamp(dist,0.0,range) / range, vec3(0));
 	while(reflected) {
 		reflected = cast_vec(o, v, dim, dist, range, tints);
 	}

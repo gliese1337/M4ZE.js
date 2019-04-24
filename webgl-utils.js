@@ -1,19 +1,18 @@
-function error(msg){
-	console.error(msg);
-}
-
 function createProgram(gl, shaders){
 	"use strict";
 	const program = gl.createProgram();
 
-	shaders.forEach(shader => gl.attachShader(program, shader));
+	for(const shader of shaders){
+		gl.attachShader(program, shader);
+		gl.deleteShader(shader);
+	}
 
 	gl.linkProgram(program);
 
 	// Check the link status
 	const linked = gl.getProgramParameter(program, gl.LINK_STATUS);
 	if(!linked){
-		error("Error in program linking:" +
+		console.error("Error in program linking:" +
 			gl.getProgramInfoLog(program));
 		gl.deleteProgram(program);
 		return null;
@@ -31,7 +30,7 @@ function createShader(gl, shaderSource, shaderType) {
 
 	const compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
 	if(!compiled){
-		error("*** Error compiling shader '" + shader + "':" +
+		console.error("*** Error compiling shader '" + shader + "':" +
 			gl.getShaderInfoLog(shader));
 		gl.deleteShader(shader);
 		return null;
@@ -90,15 +89,4 @@ function createProgramFromScripts(gl, scriptIds){
 	);
 }
 
-function createProgramFromSources(gl, vertices, fragments) {
-	const shaders = vertices.map(src => createShader(gl, src, gl.VERTEX_SHADER))
-		.concat(fragments.map(src => createShader(gl, src, gl.FRAGMENT_SHADER)));
-
-	return createProgram(gl, shaders);
-}
-
-module.exports = {
-	createProgram: createProgram,
-	createProgramFromScripts: createProgramFromScripts,
-	createProgramFromSources: createProgramFromSources,
-};
+module.exports = createProgramFromScripts;

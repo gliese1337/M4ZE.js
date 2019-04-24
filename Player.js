@@ -1,4 +1,3 @@
-const cast = require("./Raycast.js");
 const { vec_rot, normalize, orthogonalize } = require('./Vectors.js');
 
 const planes = {x:'rgt',y:'up',z:'fwd',w:'ana'};
@@ -50,8 +49,7 @@ class Player {
 		ana = normalize(orthogonalize(orthogonalize(orthogonalize(ana, fwd), rgt), up));
 		this.ana = ana;
 	}
-	translate(seconds, map) {
-		const SIZE = map.size;
+	translate(seconds, maxdist) {
 		const fwd = this.fwd;
 		const inc = this.speed * seconds;
 		let dx = fwd.x * inc;
@@ -62,11 +60,10 @@ class Player {
 			x: -fwd.x, y: -fwd.y,
 			z: -fwd.z, w: -fwd.w,
 		};
-		const { dist } = cast(this, ray, map.size * 2, map);
-		const xmax = Math.max(Math.abs(fwd.x * dist) - .001, 0);
-		const ymax = Math.max(Math.abs(fwd.y * dist) - .001, 0);
-		const zmax = Math.max(Math.abs(fwd.z * dist) - .001, 0);
-		const wmax = Math.max(Math.abs(fwd.w * dist) - .001, 0);
+		const xmax = Math.max(Math.abs(fwd.x * maxdist) - .001, 0);
+		const ymax = Math.max(Math.abs(fwd.y * maxdist) - .001, 0);
+		const zmax = Math.max(Math.abs(fwd.z * maxdist) - .001, 0);
+		const wmax = Math.max(Math.abs(fwd.w * maxdist) - .001, 0);
 		if (Math.abs(dx) > xmax) {
 			dx = Math.sign(dx) * xmax;
 		}
@@ -79,10 +76,10 @@ class Player {
 		if (Math.abs(dw) > wmax) {
 			dw = Math.sign(dw) * wmax;
 		}
-		this.x = (this.x + dx + SIZE) % SIZE;
-		this.y = (this.y + dy + SIZE) % SIZE;
-		this.z = (this.z + dz + SIZE) % SIZE;
-		this.w = (this.w + dw + SIZE) % SIZE;
+		this.x = this.x + dx;
+		this.y = this.y + dy;
+		this.z = this.z + dz;
+		this.w = this.w + dw;
 	}
 	update_speed(controls, seconds) {
 		const maxs = controls.mouse ? 0.5 : 1;
@@ -105,7 +102,7 @@ class Player {
 			}
 		}
 	}
-	update(controls, map, seconds) {
+	update(controls, seconds, maxdist) {
 		let moved = false;
 		if (controls.pup) {
 			this.rotate(controls.vp, controls.kp, seconds * turnRate);
@@ -146,7 +143,7 @@ class Player {
 		}
 		this.update_speed(controls, seconds);
 		if (this.speed !== 0) {
-			this.translate(seconds, map);
+			this.translate(seconds, maxdist);
 			moved = true;
 		}
 		return moved;
