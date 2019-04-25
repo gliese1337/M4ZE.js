@@ -114,17 +114,15 @@ float julia(vec3 v, vec3 seed) {
 
 	v = v*2.0 - 1.0;
 	for(int i = 0; i < iter; i++){
-		float x = (v.x*v.x - v.y*v.y - v.z*v.z) + seed.x;
-		float y = (2.0*v.x*v.y) + seed.y;
-		float z = (2.0*v.x*v.z) + seed.z;
+		v = vec3(
+			v.x*v.x - v.y*v.y - v.z*v.z,
+			2.0*v.x*v.y,
+			2.0*v.x*v.z
+		) + seed;
 
-		if((x * x + y * y + z * z) > 4.0){
+		if(dot(v,v) > 4.0){
 			return float(i) / float(iter);
 		}
-
-		v.x = x;
-		v.y = y;
-		v.z = z;
 	}
 
 	return 0.0;
