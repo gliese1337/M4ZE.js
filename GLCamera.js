@@ -139,7 +139,6 @@ class Camera {
 		this.onready = promise.then.bind(promise);
 	}
 	getDepth(x, y) {
-		console.log(x, y, 4*(x + y*this.gl.drawingBufferWidth), this.depthmap.length);
 		return this.depthmap[4*(x + y*this.gl.drawingBufferWidth)] / 25.5;
 	}
 	resize(w, h) {

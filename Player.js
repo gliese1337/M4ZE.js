@@ -105,11 +105,11 @@ class Player {
 	update(controls, seconds, maxdist) {
 		let moved = false;
 		if (controls.pup) {
-			this.rotate(controls.vp, controls.kp, seconds * turnRate);
+			this.rotate(controls.kp, controls.vp, seconds * turnRate);
 			moved = true;
 		}
 		else if (controls.pdn) {
-			this.rotate(controls.kp, controls.vp, seconds * turnRate);
+			this.rotate(controls.vp, controls.kp, seconds * turnRate);
 			moved = true;
 		}
 		if (controls.yrt) {
@@ -135,7 +135,7 @@ class Player {
 				this.rotate('z', 'x', seconds * x * turnRate);
 			}
 			if (y !== 0) {
-				this.rotate('y', 'z', seconds * y * turnRate);
+				this.rotate('z', 'y', seconds * y * turnRate);
 			}
 		}
 		if (moved) {

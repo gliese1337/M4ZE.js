@@ -144,7 +144,6 @@ function main(d, o){
 			[x,y,z,w] = [cx,cy,cz,cw];
 			if(val === 2){
 				if(rounds < path.length){
-					console.log("finished");
 					reverse(camera, map, route, ++rounds, overlay);
 					player_control = false;
 				}else{
