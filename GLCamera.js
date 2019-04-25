@@ -102,7 +102,6 @@ class Camera {
 		this.mapdata = map.flatten();
 		this.mapsize = map.size;
 		this.locs = {};
-		this.depthmap = null;
 
 		let depth = canvas.width / (2 * Math.tan(hfov / 2));
 		Object.defineProperties(this, {
@@ -139,7 +138,11 @@ class Camera {
 		this.onready = promise.then.bind(promise);
 	}
 	getDepth(x, y) {
-		return this.depthmap[4*(x + y*this.gl.drawingBufferWidth)] / 25.5;
+		const { gl } = this;
+		const bits = new Uint8Array(4);
+		gl.readBuffer(gl.COLOR_ATTACHMENT1);
+		gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, bits);
+		return bits[0] / 25.5;
 	}
 	resize(w, h) {
 		const { gl, canvas, fov, locs: { res, depth } } = this;
@@ -174,11 +177,6 @@ class Camera {
 		gl.readBuffer(gl.COLOR_ATTACHMENT0);
 		gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 		this.ctx.putImageData(imgdata, 0, 0, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-		const bits = new Uint8Array(gl.drawingBufferWidth * gl.drawingBufferHeight * 4);
-		gl.readBuffer(gl.COLOR_ATTACHMENT1);
-		gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, bits);
-		this.depthmap = bits;
 	}
 }
 
