@@ -1,36 +1,45 @@
-function rand(n){
+import { Vec4 } from "./Vectors";
+
+type Direction = "F" | "B" | "L" | "R" | "U" | "D" | "A" | "K";
+
+interface Cell extends Vec4 {
+	prev: Direction;
+	back: Cell;
+}
+
+function rand(n: number){
 	return Math.floor(Math.random() * n);
 }
 
-function pick(list){
+function pick(list: Direction[]){
 	return list[rand(list.length)];
-};
+}
 	
-function generate(start, xsize, ysize, zsize, wsize) {
+function generate(start: Vec4, size: number) {
+	const grid: number[][][][] = [];
 
-	function isSafe(x, y, z, w){
+	function isSafe(x: number, y: number, z: number, w: number){
 		return 8 == (
 			(grid[w][z][y][x] == 128 ? 1 : 0) +
-			(grid[w][z][y][(x+1)%xsize] == 128 ? 1 : 0) +
-			(grid[w][z][y][(x+xsize-1)%xsize] == 128 ? 1 : 0) +
-			(grid[w][z][(y+1)%ysize][x] == 128 ? 1 : 0) +
-			(grid[w][z][(y+ysize-1)%ysize][x] == 128 ? 1 : 0) +
-			(grid[w][(z+1)%zsize][y][x] == 128 ? 1 : 0) +
-			(grid[w][(z+zsize-1)%zsize][y][x] == 128 ? 1 : 0) +
-			(grid[(w+1)%wsize][z][y][x] == 128 ? 1 : 0) +
-			(grid[(w+wsize-1)%wsize][z][y][x] == 128 ? 1 : 0)
+			(grid[w][z][y][(x+1)%size] == 128 ? 1 : 0) +
+			(grid[w][z][y][(x+size-1)%size] == 128 ? 1 : 0) +
+			(grid[w][z][(y+1)%size][x] == 128 ? 1 : 0) +
+			(grid[w][z][(y+size-1)%size][x] == 128 ? 1 : 0) +
+			(grid[w][(z+1)%size][y][x] == 128 ? 1 : 0) +
+			(grid[w][(z+size-1)%size][y][x] == 128 ? 1 : 0) +
+			(grid[(w+1)%size][z][y][x] == 128 ? 1 : 0) +
+			(grid[(w+size-1)%size][z][y][x] == 128 ? 1 : 0)
 		);				
 	}
 
 	console.log("Generating Grid");
-	const grid = [];
-	for(let w = 0; w < wsize; w++){
+	for(let w = 0; w < size; w++){
 		let zlevel = []
-		for (let z = 0; z < zsize; z++){
+		for (let z = 0; z < size; z++){
 			let ylevel = [];
-			for (let y = 0; y < ysize; y++) {
+			for (let y = 0; y < size; y++) {
 				let xlevel = [];
-				for (let x = 0; x < xsize; x++) { xlevel.push(128); }
+				for (let x = 0; x < size; x++) { xlevel.push(128); }
 				ylevel.push(xlevel);
 			}
 			zlevel.push(ylevel)
@@ -50,40 +59,40 @@ function generate(start, xsize, ysize, zsize, wsize) {
 		
 		//Check if there are any directions in which we can carve out a space
 		//without running into another empty cell, which would create a cycle
-		const safe = [];
+		const safe: Direction[] = [];
 
-		if(isSafe((nx+1)%xsize, ny, nz, nw)){ safe.push("R"); }
-		if(isSafe((nx+xsize-1)%xsize, ny, nz, nw)){ safe.push("L"); }
+		if(isSafe((nx+1)%size, ny, nz, nw)){ safe.push("R"); }
+		if(isSafe((nx+size-1)%size, ny, nz, nw)){ safe.push("L"); }
 		
-		if(isSafe(nx, (ny+1)%ysize, nz, nw)){ safe.push("U"); }
-		if(isSafe(nx, (ny+ysize-1)%ysize, nz, nw)){ safe.push("D"); }
+		if(isSafe(nx, (ny+1)%size, nz, nw)){ safe.push("U"); }
+		if(isSafe(nx, (ny+size-1)%size, nz, nw)){ safe.push("D"); }
 		
-		if(isSafe(nx, ny, (nz+1)%zsize, nw)){ safe.push("F"); }
-		if(isSafe(nx, ny, (nz+zsize-1)%zsize, nw)){ safe.push("B"); }
+		if(isSafe(nx, ny, (nz+1)%size, nw)){ safe.push("F"); }
+		if(isSafe(nx, ny, (nz+size-1)%size, nw)){ safe.push("B"); }
 		
-		if(isSafe(nx, ny, nz, (nw+1)%wsize)){ safe.push("A"); }
-		if(isSafe(nx, ny, nz, (nw+wsize-1)%wsize)){ safe.push("K"); }
+		if(isSafe(nx, ny, nz, (nw+1)%size)){ safe.push("A"); }
+		if(isSafe(nx, ny, nz, (nw+size-1)%size)){ safe.push("K"); }
 		
-		if(safe.length == 0){
+		if(safe.length === 0){
 			cells.splice(index, 1);
 		}else{
 			//Pick a random direction & carve it out
 			switch(pick(safe)){
-			case 'R': nx = (nx + 1) % xsize;
+			case 'R': nx = (nx + 1) % size;
 				break;
-			case 'L': nx = (nx - 1 + xsize) % xsize;
+			case 'L': nx = (nx - 1 + size) % size;
 				break;
-			case 'U': ny = (ny + 1) % ysize;
+			case 'U': ny = (ny + 1) % size;
 				break;
-			case 'D': ny = (ny - 1 + ysize) % ysize;
+			case 'D': ny = (ny - 1 + size) % size;
 				break;
-			case 'F': nz = (nz + 1) % zsize;
+			case 'F': nz = (nz + 1) % size;
 				break;
-			case 'B': nz = (nz - 1 + zsize) % zsize;
+			case 'B': nz = (nz - 1 + size) % size;
 				break;
-			case 'A': nw = (nw + 1) % wsize;
+			case 'A': nw = (nw + 1) % size;
 				break;
-			case 'K': nw = (nw - 1 + wsize) % wsize;
+			case 'K': nw = (nw - 1 + size) % size;
 				break;
 			}
 
@@ -96,24 +105,26 @@ function generate(start, xsize, ysize, zsize, wsize) {
 	return grid;
 }
 
-class Maze {
-	constructor(size) {
-		this.size = size;
+export default class Maze {
+	private grid: number[][][][];
+	private start: Vec4;
+
+	constructor(public readonly size: number) {
 		this.start = {
 			x: rand(size),
 			y: rand(size),
 			z: rand(size),
 			w: rand(size)
 		};
-		this.grid = generate(this.start, size, size, size, size);
+		this.grid = generate(this.start, size);
 	}
-	get(x, y, z, w) {
+	get(x: number, y: number, z: number, w: number) {
 		return this.grid[w][z][y][x];
 	}
-	set(x, y, z, w, val) {
+	set(x: number, y: number, z: number, w: number, val: number) {
 		return this.grid[w][z][y][x] = val;
 	}
-	cellIndex(x, y, z, w) {
+	cellIndex(x: number, y: number, z: number, w: number) {
 		const size = this.size;
 		const size2 = size * size;
 		const size3 = size2 * size;
@@ -122,10 +133,10 @@ class Maze {
 	getLongestPath() {
 		const path = [];
 		const { size, grid, start } = this;
-		let [farthest] = find_farthest(grid, start, size, size, size, size);
+		let [farthest] = find_farthest(grid, start as Cell, size);
 		delete farthest.prev;
 		delete farthest.back;
-		[farthest] = find_farthest(grid, farthest, size, size, size, size);
+		[farthest] = find_farthest(grid, farthest, size);
 		while (farthest) {
 			path.push(farthest);
 			farthest = farthest.back;
@@ -145,7 +156,7 @@ class Maze {
 	}
 }
 
-function find_farthest(grid, start, xsize, ysize, zsize, wsize){
+function find_farthest(grid: number[][][][], start: Cell, size: number){
 	let cells, ncells = [start];
 	do {
 		[cells, ncells] = [ncells, []];
@@ -153,49 +164,49 @@ function find_farthest(grid, start, xsize, ysize, zsize, wsize){
 			let {x, y, z, w} = cell;
 
 			if(cell.prev !== "R"){
-				const n = (x+1)%xsize;
+				const n = (x+1)%size;
 				if(grid[w][z][y][n] != 128)
 					ncells.push({x:n,y,z,w,prev:"L",back:cell});
 			}
 
 			if(cell.prev !== "L"){
-				const n = (x+xsize-1)%xsize;
+				const n = (x+size-1)%size;
 				if(grid[w][z][y][n] != 128)
 					ncells.push({x:n,y,z,w,prev:"R",back:cell});
 			}
 
 			if(cell.prev !== "U"){
-				const n = (y+1)%ysize;
+				const n = (y+1)%size;
 				if(grid[w][z][n][x] != 128)
 					ncells.push({x,y:n,z,w,prev:"D",back:cell});
 			}
 			
 			if(cell.prev !== "D"){
-				const n = (y+ysize-1)%ysize;
+				const n = (y+size-1)%size;
 				if(grid[w][z][n][x] != 128)
 					ncells.push({x,y:n,z,w,prev:"U",back:cell});
 			}
 
 			if(cell.prev !== "F"){
-				const n = (z+1)%zsize;
+				const n = (z+1)%size;
 				if(grid[w][n][y][x] != 128)
 					ncells.push({x,y,z:n,w,prev:"B",back:cell});
 			}
 			
 			if(cell.prev !== "B"){
-				const n = (z+zsize-1)%zsize;
+				const n = (z+size-1)%size;
 				if(grid[w][n][y][x] != 128)
 					ncells.push({x,y,z:n,w,prev:"F",back:cell});
 			}
 
 			if(cell.prev !== "A"){
-				const n = (w+1)%wsize;
+				const n = (w+1)%size;
 				if(grid[n][z][y][x] != 128)
 					ncells.push({x,y,z,w:n,prev:"K",back:cell});
 			}
 			
 			if(cell.prev !== "K"){
-				const n = (w+wsize-1)%wsize;
+				const n = (w+size-1)%size;
 				if(grid[n][z][y][x] != 128)
 					ncells.push({x,y,z,w:n,prev:"A",back:cell});
 			}
@@ -241,5 +252,3 @@ function find_farthest(grid, start, size){
 	return cells;
 };
 */
-
-module.exports = Maze;

@@ -1,7 +1,12 @@
-"use strict";
+export interface Vec4 {
+	x: number;
+	y: number;
+	z: number;
+	w: number;
+}
 
 //Rotate a vector in the plane defined by itself and another vector
-function vec_rot(v, k, t){
+export function vec_rot(v: Vec4, k: Vec4, t: number): Vec4 {
 	const cos = Math.cos(t);
 	const sin = Math.sin(t);
 
@@ -13,13 +18,13 @@ function vec_rot(v, k, t){
 	};
 }
 
-function normalize(v){
+export function normalize(v: Vec4): Vec4 {
 	const { x, y, z, w} = v;
 	const len = Math.sqrt(x*x+y*y+z*z+w*w);
 	return { x: x/len, y: y/len, z: z/len, w: w/len };
 }
 
-function orthogonalize(v,k){
+export function orthogonalize(v: Vec4, k: Vec4): Vec4 {
     const { x: vx, y: vy, z: vz, w: vw } = v;
     const { x: kx, y: ky, z: kz, w: kw } = k;
     const vk = vx*kx+vy*ky+vz*kz+vw*kw;
@@ -31,14 +36,6 @@ function orthogonalize(v,k){
     };
 }
 
-function angle_between(v, k) {
-    const dot = v.x*k.x + v.y*k.y + v.z*k.z + v.w*k.w;
-    return Math.acos(dot);
+export function angle_between(v: Vec4, k: Vec4): number {
+    return Math.acos(v.x*k.x + v.y*k.y + v.z*k.z + v.w*k.w);
 }
-
-module.exports = {
-    vec_rot,
-    normalize,
-    orthogonalize,
-    angle_between,
-};

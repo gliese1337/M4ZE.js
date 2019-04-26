@@ -1,6 +1,21 @@
-const createProgramFromScripts = require("./webgl-utils.js");
+import createProgramFromScripts from "./webgl-utils";
+import Maze from "./Maze";
+import Player from "./Player";
 
-function attachTexture(gl, width, height, attachmentPoint) {
+interface LocMap {
+	size: WebGLUniformLocation | null;
+	map: WebGLUniformLocation | null;
+	color: WebGLUniformLocation | null;
+	res: WebGLUniformLocation | null;
+	depth: WebGLUniformLocation | null;
+	origin: WebGLUniformLocation | null;
+	rgt: WebGLUniformLocation | null;
+	up: WebGLUniformLocation | null;
+	fwd: WebGLUniformLocation | null;
+	seed: WebGLUniformLocation | null;
+}
+
+function attachTexture(gl: WebGL2RenderingContext, width: number, height: number, attachmentPoint: number) {
 	const targetTexture = gl.createTexture();
 	gl.bindTexture(gl.TEXTURE_2D, targetTexture);
 	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -11,7 +26,7 @@ function attachTexture(gl, width, height, attachmentPoint) {
 	gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, 0);
 }
 
-async function initCamera(gl, width, height) {
+async function initCamera(gl: WebGL2RenderingContext, width: number, height: number) {
 
 	// Create and bind the framebuffer
 	gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
@@ -90,44 +105,30 @@ async function initCamera(gl, width, height) {
 	return locs;
 }
 
-class Camera {
-	constructor(canvas, map, hfov) {
+export default class Camera {
+	private gl: WebGL2RenderingContext;
+	private ctx: CanvasRenderingContext2D;
+	private mapdata: Uint8Array;
+	private mapsize: number;
+	private _depth: number;
+	private locs: LocMap;
+	public onready: (onfulfilled: () => void) => Promise<void>;
+
+	constructor(private canvas: HTMLCanvasElement, public readonly map: Maze, private hfov: number) {
 		const glCanvas = document.createElement('canvas');
 		glCanvas.width = canvas.width;
 		glCanvas.height = canvas.height;
-		const gl = glCanvas.getContext("webgl2");
+		const gl = glCanvas.getContext("webgl2") as WebGL2RenderingContext;
 		this.gl = gl;
-		this.ctx = canvas.getContext('2d');
-		this.canvas = canvas;
+		this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 		this.mapdata = map.flatten();
 		this.mapsize = map.size;
-		this.locs = {};
-
-		let depth = canvas.width / (2 * Math.tan(hfov / 2));
-		Object.defineProperties(this, {
-			map: {
-				get: () => map,
-			},
-			fov: {
-				get: () => hfov,
-				set: function (a) {
-					hfov = a;
-					depth = canvas.width / (2 * Math.tan(hfov / 2));
-					gl.uniform1f(this.locs.depth, depth);
-				}
-			},
-			depth: {
-				get: () => depth,
-				set: function (d) {
-					depth = d;
-					hfov = 2 * Math.atan(canvas.width / (2 * d));
-					gl.uniform1f(this.locs.depth, depth);
-				}
-			}
-		});
+		this.locs = {} as LocMap;
+	
+		this._depth = canvas.width / (2 * Math.tan(hfov / 2));
 
 		const promise = initCamera(gl, canvas.width, canvas.height)
-			.then((locs) => {
+			.then((locs: LocMap) => {
 				this.locs = locs;
 				gl.activeTexture(gl.TEXTURE0);
 				gl.uniform1f(locs.depth, canvas.width / (2 * Math.tan(hfov / 2)));
@@ -137,14 +138,32 @@ class Camera {
 		
 		this.onready = promise.then.bind(promise);
 	}
-	getDepth(x, y) {
+	
+	get fov() { return this.hfov; }
+	set fov (a) {
+		this.hfov = a;
+		this._depth = this.canvas.width / (2 * Math.tan(a / 2));
+		this.gl.uniform1f(this.locs.depth, this._depth);
+	}
+
+	get depth() { return this._depth }
+	set depth(d) {
+		this._depth = d;
+		this.hfov = 2 * Math.atan(this.canvas.width / (2 * d));
+		this.gl.uniform1f(this.locs.depth, d);
+	}
+
+	get width() { return this.canvas.width; }
+	get height() { return this.canvas.height; }
+
+	getDepth(x: number, y: number) {
 		const { gl } = this;
 		const bits = new Uint8Array(4);
 		gl.readBuffer(gl.COLOR_ATTACHMENT1);
 		gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, bits);
 		return bits[0] / 25.5;
 	}
-	resize(w, h) {
+	resize(w: number, h: number) {
 		const { gl, canvas, fov, locs: { res, depth } } = this;
 		canvas.width = w;
 		canvas.height = h;
@@ -153,7 +172,7 @@ class Camera {
 		gl.uniform1f(depth, w / (2 * Math.tan(fov / 2)));
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
-	setCell(x, y, z, w, val, defer = false) {
+	setCell(x: number, y: number, z: number, w: number, val: number, defer = false) {
 		this.mapdata[this.map.cellIndex(x, y, z, w)] = val;
 		if (!defer)	this.loadMap();
 	}
@@ -162,10 +181,9 @@ class Camera {
 		gl.activeTexture(gl.TEXTURE0);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.mapdata.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
 	}
-	render(player) {
+	render(player: Player) {
 		const gl = this.gl;
 		const { origin, rgt, up, fwd } = this.locs;
-		const SIZE = this.mapsize;
 		gl.uniform4f(origin, player.x, player.y, player.z, player.w);
 		gl.uniform4f(rgt, player.rgt.x, player.rgt.y, player.rgt.z, player.rgt.w);
 		gl.uniform4f(up, player.up.x, player.up.y, player.up.z, player.up.w);
@@ -179,5 +197,3 @@ class Camera {
 		this.ctx.putImageData(imgdata, 0, 0, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 	}
 }
-
-module.exports = Camera;

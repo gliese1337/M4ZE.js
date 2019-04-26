@@ -1,4 +1,5 @@
-const { vec_rot, normalize, orthogonalize } = require('./Vectors.js');
+import { Vec4, vec_rot, normalize, orthogonalize } from "./Vectors";
+import { ControlStates } from "./Controls";
 
 const planes = {x:'rgt',y:'up',z:'fwd',w:'ana'};
 const planeIndices = {x:0,y:1,z:2,w:3};
@@ -11,20 +12,32 @@ const basis = [
 
 const turnRate = Math.PI / 2.5;
 
-function rotArray(arr, count) {
+function rotArray(arr: Vec4[], count: number) {
 	arr = arr.slice();
 	count -= arr.length * Math.floor(count / arr.length);
 	arr.push(...arr.splice(0, count));
 	return arr;
   }
 
-class Player {
-	constructor({x, y, z, w}, ana) {
+export default class Player implements Vec4 {
+	private speed = 0;
+
+	public x: number;
+	public y: number;
+	public z: number;
+	public w: number;
+
+	public fwd: Vec4;
+	public rgt: Vec4;
+	public up: Vec4;
+	public ana: Vec4;
+
+	constructor({x, y, z, w}: Vec4, ana: keyof Vec4) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.w = w;
-		this.speed = 0;
+
 		[
 			this.rgt,
 			this.up,
@@ -32,11 +45,11 @@ class Player {
 			this.ana,
 		] = rotArray(basis, (planeIndices[ana] + 1) % 4);
 	}
-	rotate(v, k, angle) {
-		v = planes[v];
-		k = planes[k];
-		this[v] = vec_rot(this[v], this[k], angle);
-		this[k] = vec_rot(this[k], this[v], -angle);
+	rotate(v: keyof Vec4, k: keyof Vec4, angle: number) {
+		const vn = planes[v] as "rgt"|"fwd"|"up"|"ana";
+		const kn = planes[k] as "rgt"|"fwd"|"up"|"ana";;
+		this[vn] = vec_rot(this[vn], this[kn], angle);
+		this[kn] = vec_rot(this[kn], this[vn], -angle);
 	}
 	renormalize() {
 		let { rgt, up, fwd, ana } = this;
@@ -49,17 +62,14 @@ class Player {
 		ana = normalize(orthogonalize(orthogonalize(orthogonalize(ana, fwd), rgt), up));
 		this.ana = ana;
 	}
-	translate(seconds, maxdist) {
+	translate(seconds: number, maxdist: number) {
 		const fwd = this.fwd;
 		const inc = this.speed * seconds;
 		let dx = fwd.x * inc;
 		let dy = fwd.y * inc;
 		let dz = fwd.z * inc;
 		let dw = fwd.w * inc;
-		const ray = this.speed > 0 ? fwd : {
-			x: -fwd.x, y: -fwd.y,
-			z: -fwd.z, w: -fwd.w,
-		};
+
 		const xmax = Math.max(Math.abs(fwd.x * maxdist) - .001, 0);
 		const ymax = Math.max(Math.abs(fwd.y * maxdist) - .001, 0);
 		const zmax = Math.max(Math.abs(fwd.z * maxdist) - .001, 0);
@@ -81,7 +91,7 @@ class Player {
 		this.z = this.z + dz;
 		this.w = this.w + dw;
 	}
-	update_speed(controls, seconds) {
+	update_speed(controls: ControlStates, seconds: number) {
 		const maxs = controls.mouse ? 0.5 : 1;
 		if (controls.fwd) {
 			this.speed += 0.75 * seconds;
@@ -102,7 +112,7 @@ class Player {
 			}
 		}
 	}
-	update(controls, seconds, maxdist) {
+	update(controls: ControlStates, seconds: number, maxdist: number) {
 		let moved = false;
 		if (controls.pup) {
 			this.rotate(controls.kp, controls.vp, seconds * turnRate);
@@ -149,5 +159,3 @@ class Player {
 		return moved;
 	}
 }
-
-module.exports = Player;
