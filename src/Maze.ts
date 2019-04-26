@@ -19,16 +19,16 @@ function generate(start: Vec4, size: number) {
 	const grid: number[][][][] = [];
 
 	function isSafe(x: number, y: number, z: number, w: number){
-		return 8 == (
-			(grid[w][z][y][x] == 128 ? 1 : 0) +
-			(grid[w][z][y][(x+1)%size] == 128 ? 1 : 0) +
-			(grid[w][z][y][(x+size-1)%size] == 128 ? 1 : 0) +
-			(grid[w][z][(y+1)%size][x] == 128 ? 1 : 0) +
-			(grid[w][z][(y+size-1)%size][x] == 128 ? 1 : 0) +
-			(grid[w][(z+1)%size][y][x] == 128 ? 1 : 0) +
-			(grid[w][(z+size-1)%size][y][x] == 128 ? 1 : 0) +
-			(grid[(w+1)%size][z][y][x] == 128 ? 1 : 0) +
-			(grid[(w+size-1)%size][z][y][x] == 128 ? 1 : 0)
+		return 8 === (
+			(grid[w][z][y][x] === 128 ? 1 : 0) +
+			(grid[w][z][y][(x+1)%size] === 128 ? 1 : 0) +
+			(grid[w][z][y][(x+size-1)%size] === 128 ? 1 : 0) +
+			(grid[w][z][(y+1)%size][x] === 128 ? 1 : 0) +
+			(grid[w][z][(y+size-1)%size][x] === 128 ? 1 : 0) +
+			(grid[w][(z+1)%size][y][x] === 128 ? 1 : 0) +
+			(grid[w][(z+size-1)%size][y][x] === 128 ? 1 : 0) +
+			(grid[(w+1)%size][z][y][x] === 128 ? 1 : 0) +
+			(grid[(w+size-1)%size][z][y][x] === 128 ? 1 : 0)
 		);				
 	}
 

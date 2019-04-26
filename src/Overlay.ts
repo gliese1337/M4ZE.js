@@ -35,7 +35,7 @@ export default class Overlay {
 		ctx.moveTo(x, y + 25);
 		ctx.lineTo(x, y + 5);
 		ctx.stroke();
-		if (typeof dist == 'number') {
+		if (typeof dist === 'number') {
 			ctx.beginPath();
 			ctx.moveTo(x + 12, y + 12);
 			ctx.lineTo(x + 25, y + 25);
@@ -46,7 +46,7 @@ export default class Overlay {
 			ctx.textBaseline = "bottom";
 			ctx.fillStyle = "#00FF00";
 			const d = Math.round(100 * dist) / 10;
-			ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
+			ctx.fillText(d + (d === Math.floor(d) ? ".0" : ""), x + 28, y + 24);
 		}
 	}
 	labeledValue(label: string, val: string, format = val) {
@@ -125,7 +125,7 @@ export default class Overlay {
 		ctx.clearRect(0, 0, width, height);
 		ctx.font = "10px Calibri";
 		ctx.fillStyle = "#FFFFFF";
-		ctx.fillText("FPS: " + fps + (fps == Math.floor(fps) ? ".0" : ""), 5, 10);
+		ctx.fillText("FPS: " + fps + (fps === Math.floor(fps) ? ".0" : ""), 5, 10);
 		// Draw panel
 		ctx.beginPath();
 		ctx.moveTo(0, height);

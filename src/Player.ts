@@ -1,5 +1,7 @@
 import { Vec4, vec_rot, normalize, orthogonalize } from "./Vectors";
 import { ControlStates } from "./Controls";
+import Maze from "./Maze";
+import cast from "./Raycast";
 
 const planes = {x:'rgt',y:'up',z:'fwd',w:'ana'};
 const planeIndices = {x:0,y:1,z:2,w:3};
@@ -62,7 +64,7 @@ export default class Player implements Vec4 {
 		ana = normalize(orthogonalize(orthogonalize(orthogonalize(ana, fwd), rgt), up));
 		this.ana = ana;
 	}
-	translate(seconds: number, maxdist: number) {
+	translate(seconds: number, map: Maze) {
 		const fwd = this.fwd;
 		const inc = this.speed * seconds;
 		let dx = fwd.x * inc;
@@ -70,10 +72,17 @@ export default class Player implements Vec4 {
 		let dz = fwd.z * inc;
 		let dw = fwd.w * inc;
 
+		const ray = this.speed > 0 ? fwd : {
+			x: -fwd.x, y: -fwd.y,
+			z: -fwd.z, w: -fwd.w,
+		};
+		const maxdist = cast(this, ray, map.size * 2, map);
+
 		const xmax = Math.max(Math.abs(fwd.x * maxdist) - .001, 0);
 		const ymax = Math.max(Math.abs(fwd.y * maxdist) - .001, 0);
 		const zmax = Math.max(Math.abs(fwd.z * maxdist) - .001, 0);
 		const wmax = Math.max(Math.abs(fwd.w * maxdist) - .001, 0);
+
 		if (Math.abs(dx) > xmax) {
 			dx = Math.sign(dx) * xmax;
 		}
@@ -86,6 +95,7 @@ export default class Player implements Vec4 {
 		if (Math.abs(dw) > wmax) {
 			dw = Math.sign(dw) * wmax;
 		}
+
 		this.x = this.x + dx;
 		this.y = this.y + dy;
 		this.z = this.z + dz;
@@ -112,7 +122,7 @@ export default class Player implements Vec4 {
 			}
 		}
 	}
-	update(controls: ControlStates, seconds: number, maxdist: number) {
+	update(controls: ControlStates, seconds: number, map: Maze) {
 		let moved = false;
 		if (controls.pup) {
 			this.rotate(controls.kp, controls.vp, seconds * turnRate);
@@ -153,7 +163,7 @@ export default class Player implements Vec4 {
 		}
 		this.update_speed(controls, seconds);
 		if (this.speed !== 0) {
-			this.translate(seconds, maxdist);
+			this.translate(seconds, map);
 			moved = true;
 		}
 		return moved;

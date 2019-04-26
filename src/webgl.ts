@@ -29,7 +29,7 @@ function mark_route(camera: Camera | null, map: Maze, route: Route, skip: number
 	map.set(start.x,start.y,start.z,start.w,0);
 	map.set(end.x,end.y,end.z,end.w,2);
 	path.forEach(({x,y,z,w},i) => {
-		if((i+1) % mod == 0){
+		if((i+1) % mod === 0){
 			map.set(x,y,z,w,1);
 			if(camera){ camera.setCell(x,y,z,w,1, true); }
 		}else{
@@ -135,7 +135,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 					throw new Error("Resetting is not yet implemented");
 				}
 				return true;
-			}else if(val === 1 || val == 4){
+			}else if(val === 1 || val === 4){
 				const nv = states.mark?3:0;
 				map.set(x,y,z,w,nv);
 				camera.setCell(x,y,z,w,nv);
@@ -165,15 +165,14 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 			if(Math.abs(ry) < .01){ ry = 0; }
 		}
 
-		const dist = camera.getDepth(Math.round(rx + camera.width / 2), Math.round(ry + camera.height / 2));
+		const dist = camera.getDepth(player, rx, ry);
 		overlay.tick(player, seconds);
 		overlay.reticle({ x: rx, y: ry, dist });
 	};
 
 	const loop = new GameLoop((seconds: number) => {
 		if(player_control){
-			const maxdist = camera.getDepth(Math.floor(camera.width / 2), Math.floor(camera.height / 2));
-			let change = player.update(states, seconds, maxdist);
+			let change = player.update(states, seconds, map);
 			change = update_zoom(seconds) || change;
 			change = update_cell() || change;
 

@@ -1,6 +1,7 @@
 import createProgramFromScripts from "./webgl-utils";
 import Maze from "./Maze";
 import Player from "./Player";
+import cast from "./Raycast";
 
 interface LocMap {
 	size: WebGLUniformLocation | null;
@@ -30,10 +31,7 @@ async function initCamera(gl: WebGL2RenderingContext, width: number, height: num
 
 	// Create and bind the framebuffer
 	gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
-
 	attachTexture(gl, width, height, gl.COLOR_ATTACHMENT0); // rendering texture
-	attachTexture(gl, width, height, gl.COLOR_ATTACHMENT1); // depth texture
-	gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
 
 	// Create a buffer and put a single rectangle in it
 	gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
@@ -156,12 +154,17 @@ export default class Camera {
 	get width() { return this.canvas.width; }
 	get height() { return this.canvas.height; }
 
-	getDepth(x: number, y: number) {
-		const { gl } = this;
-		const bits = new Uint8Array(4);
-		gl.readBuffer(gl.COLOR_ATTACHMENT1);
-		gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, bits);
-		return bits[0] / 25.5;
+	getDepth(player: Player, x: number, y: number) {
+		const depth = this._depth;
+		const { fwd, rgt, up } = player;
+		const ray = {
+			x: fwd.x * depth + rgt.x * x + up.x * y,
+			y: fwd.y * depth + rgt.y * x + up.y * y,
+			z: fwd.z * depth + rgt.z * x + up.z * y,
+			w: fwd.w * depth + rgt.w * x + up.z * y
+		};
+
+		return cast(player, ray, this.mapsize * 2, this.map);
 	}
 	resize(w: number, h: number) {
 		const { gl, canvas, fov, locs: { res, depth } } = this;
@@ -192,7 +195,6 @@ export default class Camera {
 
 		const imgdata = this.ctx.createImageData(gl.drawingBufferWidth, gl.drawingBufferHeight);
 		const pixels = new Uint8Array(imgdata.data.buffer);
-		gl.readBuffer(gl.COLOR_ATTACHMENT0);
 		gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
 		this.ctx.putImageData(imgdata, 0, 0, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 	}

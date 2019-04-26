@@ -5,6 +5,28 @@ export interface Vec4 {
 	w: number;
 }
 
+export function dot(v: Vec4, k: Vec4): number {
+	return v.x*k.x+v.y*k.y+v.z*k.z+v.w*k.w;
+}
+
+export function move_from(o: Vec4, dist: number, d: Vec4) {
+	return {
+        x: o.x + dist * d.x,
+        y: o.y + dist * d.y,
+        z: o.z + dist * d.z,
+        w: o.w + dist * d.w,
+    };
+}
+
+export function fract(v: Vec4) {
+	return {
+		x: v.x - Math.floor(v.x),
+		y: v.y - Math.floor(v.y),
+		z: v.z - Math.floor(v.z),
+		w: v.w - Math.floor(v.w),
+	};
+}
+
 //Rotate a vector in the plane defined by itself and another vector
 export function vec_rot(v: Vec4, k: Vec4, t: number): Vec4 {
 	const cos = Math.cos(t);
