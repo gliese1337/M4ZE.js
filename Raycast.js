@@ -1,19 +1,12 @@
-function normalize(v){
-	"use strict";
-	const mag = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
-	return { x: v.x/mag, y: v.y/mag, z: v.z/mag, w: v.w/mag };
-}
+const { normalize } = require("./Vectors");
 
 function get_cell(map, x, y, z, w){
 	"use strict";
-	x %= map.size;
-	y %= map.size;
-	z %= map.size;
-	w %= map.size;
-	if(x < 0){ x += map.size; }
-	if(y < 0){ y += map.size; }
-	if(z < 0){ z += map.size; }
-	if(w < 0){ w += map.size; }
+	const { size } = map;
+	x -= size*Math.floor(x/size);
+	y -= size*Math.floor(y/size);
+	z -= size*Math.floor(z/size);
+	w -= size*Math.floor(w/size);
 	return map.grid[w][z][y][x];
 }
 
@@ -76,26 +69,22 @@ function cast(o, v, range, map) {
 	let { d: wdist, s: sw, m: mw } =
 		cast_comp(v.w, v.x, v.y, v.z, o.w);
 
-	let value, dim, distance;
+	let value, distance;
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
-		if(xdist < ydist && xdist < zdist && xdist < wdist){		
-			dim = 1*sx;
+		if(xdist < ydist && xdist < zdist && xdist < wdist){
 			mx += sx;
 			distance = xdist;
 			xdist += xdelta;
 		}else if(ydist < zdist && ydist < wdist){
-			dim = 2*sy;
 			my += sy;
 			distance = ydist;
 			ydist += ydelta;
 		}else if(zdist < wdist){
-			dim = 3*sz;
 			mz += sz;
 			distance = zdist;
 			zdist += zdelta;
 		}else{
-			dim = 4*sw;
 			mw += sw;
 			distance = wdist;
 			wdist += wdelta;
@@ -104,10 +93,7 @@ function cast(o, v, range, map) {
 		value = get_cell(map, mx, my, mz, mw);
 	} while(value != 128 && distance < range);
 
-	return {
-		dim: dim,
-		dist: distance
-	};
+	return distance;
 }
 
 module.exports = cast;

@@ -38,7 +38,6 @@ class Player {
 		k = planes[k];
 		this[v] = vec_rot(this[v], this[k], angle);
 		this[k] = vec_rot(this[k], this[v], -angle);
-		//console.log("Rotate",v,k);
 	}
 	renormalize() {
 		let { rgt, up, fwd, ana } = this;
@@ -63,7 +62,7 @@ class Player {
 			x: -fwd.x, y: -fwd.y,
 			z: -fwd.z, w: -fwd.w,
 		};
-		const { dist } = cast(this, ray, map.size * 2, map);
+		const dist = cast(this, ray, map.size * 2, map);
 		const xmax = Math.max(Math.abs(fwd.x * dist) - .001, 0);
 		const ymax = Math.max(Math.abs(fwd.y * dist) - .001, 0);
 		const zmax = Math.max(Math.abs(fwd.z * dist) - .001, 0);

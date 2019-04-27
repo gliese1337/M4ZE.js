@@ -144,7 +144,6 @@ function main(d, o){
 			[x,y,z,w] = [cx,cy,cz,cw];
 			if(val === 2){
 				if(rounds < path.length){
-					console.log("finished");
 					reverse(camera, map, route, ++rounds, overlay);
 					player_control = false;
 				}else{
@@ -183,9 +182,9 @@ function main(d, o){
 			if(Math.abs(ry) < .01){ ry = 0; }
 		}
 
-		const { dist } = camera.castRay(player);
+		const dist = camera.castRay(player, rx, ry);
 		overlay.tick(player, seconds);
-		overlay.reticle({ x: rx, y: ry, dist });
+		overlay.reticle(rx, ry, dist);
 	};
 
 	const loop = new GameLoop((seconds) => {

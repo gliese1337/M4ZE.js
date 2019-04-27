@@ -100,18 +100,15 @@ class Camera {
 			});
 		this.onready = promise.then.bind(promise);
 	}
-	getRay(player, cx = 0, cy = 0) {
+	castRay(player, x, y) {
 		const depth = this.depth;
 		const { fwd, rgt, up } = player;
-		return {
-			x: fwd.x * depth + rgt.x * cx + up.x * cy,
-			y: fwd.y * depth + rgt.y * cx + up.y * cy,
-			z: fwd.z * depth + rgt.z * cx + up.z * cy,
-			w: fwd.w * depth + rgt.w * cx + up.z * cy
+		const ray = {
+			x: fwd.x * depth + rgt.x * x + up.x * y,
+			y: fwd.y * depth + rgt.y * x + up.y * y,
+			z: fwd.z * depth + rgt.z * x + up.z * y,
+			w: fwd.w * depth + rgt.w * x + up.z * y,
 		};
-	}
-	castRay(player, x, y) {
-		const ray = this.getRay(player, x, y);
 		return cast(player, ray, this.map.size * 2, this.map);
 	}
 	resize(w, h) {

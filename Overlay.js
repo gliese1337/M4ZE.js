@@ -10,7 +10,7 @@ class Overlay {
 		this.canvas.width = w;
 		this.canvas.height = h;
 	}
-	reticle({ x = 0, y = 0, dist } = {}) {
+	reticle(x, y, dist) {
 		const { ctx } = this;
 		x += this.canvas.width / 2;
 		y += this.canvas.height / 2;
@@ -28,19 +28,18 @@ class Overlay {
 		ctx.moveTo(x, y + 25);
 		ctx.lineTo(x, y + 5);
 		ctx.stroke();
-		if (typeof dist == 'number') {
-			ctx.beginPath();
-			ctx.moveTo(x + 12, y + 12);
-			ctx.lineTo(x + 25, y + 25);
-			ctx.lineTo(x + 55, y + 25);
-			ctx.stroke();
-			ctx.font = "15px Calibri";
-			ctx.textAlign = "left";
-			ctx.textBaseline = "bottom";
-			ctx.fillStyle = "#00FF00";
-			const d = Math.round(100 * dist) / 10;
-			ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
-		}
+	
+		ctx.beginPath();
+		ctx.moveTo(x + 12, y + 12);
+		ctx.lineTo(x + 25, y + 25);
+		ctx.lineTo(x + 55, y + 25);
+		ctx.stroke();
+		ctx.font = "15px Calibri";
+		ctx.textAlign = "left";
+		ctx.textBaseline = "bottom";
+		ctx.fillStyle = "#00FF00";
+		const d = Math.round(100 * dist) / 10;
+		ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
 	}
 	labeledValue(label, val, format = val) {
 		const { ctx } = this;
