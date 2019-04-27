@@ -16,22 +16,11 @@ interface LocMap {
 	seed: WebGLUniformLocation | null;
 }
 
-function attachTexture(gl: WebGL2RenderingContext, width: number, height: number, attachmentPoint: number) {
-	const targetTexture = gl.createTexture();
-	gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-	gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, 0);
-}
-
 async function initCamera(gl: WebGL2RenderingContext, width: number, height: number) {
 
 	// Create and bind the framebuffer
-	gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
-	attachTexture(gl, width, height, gl.COLOR_ATTACHMENT0); // rendering texture
+	//gl.bindFramebuffer(gl.FRAMEBUFFER, gl.createFramebuffer());
+	//attachTexture(gl, width, height, gl.COLOR_ATTACHMENT0); // rendering texture
 
 	// Create a buffer and put a single rectangle in it
 	gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
@@ -105,7 +94,6 @@ async function initCamera(gl: WebGL2RenderingContext, width: number, height: num
 
 export default class Camera {
 	private gl: WebGL2RenderingContext;
-	private ctx: CanvasRenderingContext2D;
 	private mapdata: Uint8Array;
 	private mapsize: number;
 	private _depth: number;
@@ -113,12 +101,8 @@ export default class Camera {
 	public onready: (onfulfilled: () => void) => Promise<void>;
 
 	constructor(private canvas: HTMLCanvasElement, public readonly map: Maze, private hfov: number) {
-		const glCanvas = document.createElement('canvas');
-		glCanvas.width = canvas.width;
-		glCanvas.height = canvas.height;
-		const gl = glCanvas.getContext("webgl2") as WebGL2RenderingContext;
+		const gl = canvas.getContext("webgl2") as WebGL2RenderingContext;
 		this.gl = gl;
-		this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 		this.mapdata = map.flatten();
 		this.mapsize = map.size;
 		this.locs = {} as LocMap;
@@ -192,10 +176,5 @@ export default class Camera {
 		gl.uniform4f(up, player.up.x, player.up.y, player.up.z, player.up.w);
 		gl.uniform4f(fwd, player.fwd.x, player.fwd.y, player.fwd.z, player.fwd.w);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		const imgdata = this.ctx.createImageData(gl.drawingBufferWidth, gl.drawingBufferHeight);
-		const pixels = new Uint8Array(imgdata.data.buffer);
-		gl.readPixels(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
-		this.ctx.putImageData(imgdata, 0, 0, 0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 	}
 }

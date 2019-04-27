@@ -170,24 +170,12 @@ vec3 calc_tex(int dim, vec4 ray){
 }
 
 /* Flashlight Algorithm */
-const float light_angle = 40.0;
-const float light_mult = 5.0;
-vec3 add_light(vec4 fwd, vec4 v, vec3 color, int dim, float dist){
-	float t = degrees(acos(dot(fwd, v)));
-	if(t > light_angle){ return color; }
-
-	// Dim based on distance
-	float dm = light_mult / exp2(dist);
-
-	// Dim based on incidence angle
-	float am;
-	if     (dim == 1){ am = abs(v.x); }
-	else if(dim == 2){ am = abs(v.y); }
-	else if(dim == 3){ am = abs(v.z); }
-	else             { am = abs(v.w); }
-
-	float mult = 1.0 + dm * am * (1.0 - (t / light_angle));
-	return min(color * mult, 1.0);
+const float flashlight = 2.5;
+float get_light(float x, float y, float dist, float tint){
+	float t = atan(y, x);
+	float g = exp(-t*t/0.25);
+	float dm = flashlight*exp2(-dist); // Dim based on distance
+	return min(2.0, dm * g + tint);
 }
 
 /*
@@ -340,6 +328,6 @@ void main(){
 		tex = mix(tex, tint, min(tintdist, 0.5)); 
 	}
 
-	tex = add_light(u_fwd, ray, tex, dim, dist);
-	outColor = vec4(tex, 1.0);
+	float light = get_light(u_depth, length(coords), dist, tintdist);
+	outColor = vec4(min(tex * light, 1.0), 1.0);
 }

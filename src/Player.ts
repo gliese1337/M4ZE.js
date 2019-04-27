@@ -123,11 +123,11 @@ export default class Player implements Vec4 {
 	update(controls: ControlStates, seconds: number, map: Maze) {
 		let moved = false;
 		if (controls.pup) {
-			this.rotate(controls.kp, controls.vp, seconds * turnRate);
+			this.rotate(controls.vp, controls.kp, seconds * turnRate);
 			moved = true;
 		}
 		else if (controls.pdn) {
-			this.rotate(controls.vp, controls.kp, seconds * turnRate);
+			this.rotate(controls.kp, controls.vp, seconds * turnRate);
 			moved = true;
 		}
 		if (controls.yrt) {
