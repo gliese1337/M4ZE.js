@@ -1,27 +1,30 @@
-function normalize(v){
-	"use strict";
-	const mag = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
-	return { x: v.x/mag, y: v.y/mag, z: v.z/mag, w: v.w/mag };
+import { Vec4, normalize, dot, move_from, fract } from "./Vectors";
+import Maze from "./Maze";
+
+function get_cell(map: Maze, x: number, y: number, z: number, w: number){
+    const { size } = map;
+	x -= size*Math.floor(x/size);
+	y -= size*Math.floor(y/size);
+	z -= size*Math.floor(z/size);
+	w -= size*Math.floor(w/size);
+	return map.get(x, y, z, w);
 }
 
-function get_cell(map, x, y, z, w){
-	"use strict";
-	x %= map.size;
-	y %= map.size;
-	z %= map.size;
-	w %= map.size;
-	if(x < 0){ x += map.size; }
-	if(y < 0){ y += map.size; }
-	if(z < 0){ z += map.size; }
-	if(w < 0){ w += map.size; }
-	return map.grid[w][z][y][x];
+function isectSphere(c: Vec4, r: number, o: Vec4, d: Vec4): number {
+	const oc = { x: o.x - c.x, y: o.y - c.y, z: o.z - c.z, w: o.w - c.w };
+	const loc = dot(d, oc);
+	const det = loc*loc + r*r - dot(oc, oc);
+	if(det < 0) return Infinity;
+	const sqrtdet = Math.sqrt(det);
+	return Math.min(sqrtdet - loc, -sqrtdet - loc);
 }
 
 // Find the distance to the next cell boundary
 // for a particular vector component
-function cast_comp(x, y, z, w, o){
-	"use strict";
-	let delta, s, m;
+function cast_comp(x: number, y: number, z: number, w: number, o: number){
+    let delta: number;
+    let s: number;
+    let m: number;
 	if(x > 0){
 		s = 1;
 		m = Math.floor(o);
@@ -47,8 +50,7 @@ function cast_comp(x, y, z, w, o){
 // in each dimension. We move to whichever is closer and
 // check for a wall (inspect). Then we repeat until we've
 // traced the entire length of the ray.
-function cast(o, v, range, map) {
-	"use strict";
+export default function cast(o: Vec4, v: Vec4, range: number, map: Maze) {
 
 	v = normalize(v);
 		
@@ -60,7 +62,6 @@ function cast(o, v, range, map) {
 	const ydelta = Math.abs(1/v.y);
 	const zdelta = Math.abs(1/v.z);
 	const wdelta = Math.abs(1/v.w);
-
 	
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
@@ -76,38 +77,40 @@ function cast(o, v, range, map) {
 	let { d: wdist, s: sw, m: mw } =
 		cast_comp(v.w, v.x, v.y, v.z, o.w);
 
-	let value, dim, distance;
+    let distance: number;
+    let value: number;
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
-		if(xdist < ydist && xdist < zdist && xdist < wdist){		
-			dim = 1*sx;
+		if(xdist < ydist && xdist < zdist && xdist < wdist){
 			mx += sx;
 			distance = xdist;
 			xdist += xdelta;
 		}else if(ydist < zdist && ydist < wdist){
-			dim = 2*sy;
 			my += sy;
 			distance = ydist;
 			ydist += ydelta;
 		}else if(zdist < wdist){
-			dim = 3*sz;
 			mz += sz;
 			distance = zdist;
 			zdist += zdelta;
 		}else{
-			dim = 4*sw;
 			mw += sw;
 			distance = wdist;
 			wdist += wdelta;
 		}
 
-		value = get_cell(map, mx, my, mz, mw);
-	} while(value != 128 && distance < range);
+        value = get_cell(map, mx, my, mz, mw);
+        
+        if((value & 64) > 0){
+            const center = { x: 0.5, y: 0.5, z: 0.5, w: 0.5 };
+            const l = fract(move_from(o, distance, v));
+            const isect = isectSphere(center, 0.5, l, v);
+			if(isFinite(isect)) {
+				return distance + isect;
+			}
+        }
 
-	return {
-		dim: dim,
-		dist: distance
-	};
+	} while(value !== 128 && distance < range);
+
+	return distance;
 }
-
-module.exports = cast;

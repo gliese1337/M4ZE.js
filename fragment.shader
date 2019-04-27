@@ -1,7 +1,6 @@
 #version 300 es
 precision mediump float;
 
-//const int SIZE = 5;
 uniform int SIZE;
 int SIZE2;
 int SIZE3;
@@ -316,7 +315,7 @@ void main(){
 	vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
 	
-	vec4 o = u_origin;
+	vec4 o = mod(u_origin, float(SIZE));
 	vec4 v = ray;
 
 	vec3 tints = vec3(0);

@@ -4,13 +4,19 @@
   "description": "A 4D maze game with raycast graphics",
   "main": "main.js",
   "scripts": {
+    "build": "node node_modules\\typescript\\bin\\tsc",
     "start": "electron ."
   },
   "repository": "https://github.com/gliese1337/M4ZE.js",
-  "keywords": ["4D", "maze"],
+  "keywords": [
+    "4D",
+    "maze"
+  ],
   "author": "Logan Kearsley",
   "license": "CC0-1.0",
   "devDependencies": {
-    "electron": "^1.4.1"
+    "@types/webgl2": "0.0.4",
+    "electron": "^1.4.1",
+    "typescript": "^3.4.5"
   }
 }

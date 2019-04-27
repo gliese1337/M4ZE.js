@@ -1,16 +1,23 @@
-class Overlay {
-	constructor(canvas, len) {
-		this.canvas = canvas;
-		this.ctx = canvas.getContext('2d');
-		this.fpsw = [];
-		this.len = len;
-		this.progress = 0;
+import Player from "./Player";
+
+function get_angle(c: number){
+	return Math.round(180*Math.acos(c)/Math.PI);
+}
+
+export default class Overlay {
+	private ctx: CanvasRenderingContext2D;
+	private fpsw: number[] = [];
+	public progress = 0;
+
+	constructor(private canvas: HTMLCanvasElement, private len: number) {
+		this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 	}
-	resize(w, h) {
+
+	resize(w: number, h: number) {
 		this.canvas.width = w;
 		this.canvas.height = h;
 	}
-	reticle({ x = 0, y = 0, dist } = {}) {
+	reticle(x: number, y: number, dist: number) {
 		const { ctx } = this;
 		x += this.canvas.width / 2;
 		y += this.canvas.height / 2;
@@ -28,21 +35,20 @@ class Overlay {
 		ctx.moveTo(x, y + 25);
 		ctx.lineTo(x, y + 5);
 		ctx.stroke();
-		if (typeof dist == 'number') {
-			ctx.beginPath();
-			ctx.moveTo(x + 12, y + 12);
-			ctx.lineTo(x + 25, y + 25);
-			ctx.lineTo(x + 55, y + 25);
-			ctx.stroke();
-			ctx.font = "15px Calibri";
-			ctx.textAlign = "left";
-			ctx.textBaseline = "bottom";
-			ctx.fillStyle = "#00FF00";
-			const d = Math.round(100 * dist) / 10;
-			ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
-		}
+	
+		ctx.beginPath();
+		ctx.moveTo(x + 12, y + 12);
+		ctx.lineTo(x + 25, y + 25);
+		ctx.lineTo(x + 55, y + 25);
+		ctx.stroke();
+		ctx.font = "15px Calibri";
+		ctx.textAlign = "left";
+		ctx.textBaseline = "bottom";
+		ctx.fillStyle = "#00FF00";
+		const d = Math.round(100 * dist) / 10;
+		ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
 	}
-	labeledValue(label, val, format = val) {
+	labeledValue(label: string, val: string, format = val) {
 		const { ctx } = this;
 		const lsize = ctx.measureText(label);
 		const vsize = ctx.measureText(format);
@@ -56,7 +62,7 @@ class Overlay {
 			height: height + 2
 		};
 	}
-	position(player) {
+	position(player: Player) {
 		const { ctx } = this;
 		let width, height, nh;
 		let wtotal = 0;
@@ -81,7 +87,7 @@ class Overlay {
 			height
 		};
 	}
-	orientation(player) {
+	orientation(player: Player) {
 		const { ctx } = this;
 		const { fwd } = player;
 		let width, height, nh;
@@ -107,7 +113,7 @@ class Overlay {
 			height
 		};
 	}
-	tick(player, seconds) {
+	tick(player: Player, seconds: number) {
 		const { canvas, ctx, fpsw, len, progress } = this;
 		const { height, width } = canvas;
 		if (fpsw.length > 20) {
@@ -118,7 +124,7 @@ class Overlay {
 		ctx.clearRect(0, 0, width, height);
 		ctx.font = "10px Calibri";
 		ctx.fillStyle = "#FFFFFF";
-		ctx.fillText("FPS: " + fps + (fps == Math.floor(fps) ? ".0" : ""), 5, 10);
+		ctx.fillText("FPS: " + fps + (fps === Math.floor(fps) ? ".0" : ""), 5, 10);
 		// Draw panel
 		ctx.beginPath();
 		ctx.moveTo(0, height);
@@ -145,9 +151,3 @@ class Overlay {
 		ctx.restore();
 	}
 }
-
-function get_angle(c){
-	return Math.round(180*Math.acos(c)/Math.PI);
-}
-
-module.exports = Overlay;

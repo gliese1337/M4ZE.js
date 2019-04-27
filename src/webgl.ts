@@ -1,28 +1,35 @@
-const SIZE = 3;
-const Camera = require("./GLCamera.js");
-const Overlay = require("./Overlay.js");
-const Player = require("./Player.js");
-const Controls = require("./Controls.js");
-const GameLoop = require("./GameLoop.js");
-const Maze = require("./Maze.js");
-const { vec_rot, normalize, orthogonalize, angle_between } = require('./Vectors.js');
+import Camera from "./GLCamera";
+import Overlay from "./Overlay";
+import Player from "./Player";
+import Controls from "./Controls";
+import GameLoop from "./GameLoop";
+import Maze from "./Maze.js";
+import { vec_rot, normalize, orthogonalize, angle_between, Vec4 } from "./Vectors";
 
-function get_route(map){
+const SIZE = 3;
+
+interface Route {
+	start: Vec4;
+	end: Vec4;
+	path: Vec4[];
+}
+
+function get_route(map: Maze): Route {
 	const path = map.getLongestPath();
-	const start = path.shift();
-	const end = path.pop();
+	const start = path.shift() as Vec4;
+	const end = path.pop() as Vec4;
 
 	return { start, path, end };
 }
 
-function mark_route(camera, map, route, skip){
+function mark_route(camera: Camera | null, map: Maze, route: Route, skip: number){
 	const {start, path, end} = route;
 	const mod = skip + 1;
 
 	map.set(start.x,start.y,start.z,start.w,0);
 	map.set(end.x,end.y,end.z,end.w,2);
 	path.forEach(({x,y,z,w},i) => {
-		if((i+1) % mod == 0){
+		if((i+1) % mod === 0){
 			map.set(x,y,z,w,1);
 			if(camera){ camera.setCell(x,y,z,w,1, true); }
 		}else{
@@ -37,26 +44,7 @@ function mark_route(camera, map, route, skip){
 	}
 }
 
-function reset(camera, overlay, player){
-	const map = new Maze(SIZE);
-	const route = get_route(map);
-	const { start: {x, y, z, w}, path } = route;
-
-	mark_route(camera, map, route, 0);
-
-	camera.map = map;
-	overlay.len = path.length+1;
-	overlay.progress = 0;
-
-	player.x += x - Math.floor(player.x);
-	player.y += y - Math.floor(player.y);
-	player.z += z - Math.floor(player.z);
-	player.w += w - Math.floor(player.w);
-
-	return { map, route };
-}
-
-function reverse(camera, map, route, skip, overlay){
+function reverse(camera: Camera, map: Maze, route: any, skip: number, overlay: Overlay){
 	[route.end, route.start] = [route.start, route.end];
 	route.path.reverse();
 
@@ -64,15 +52,15 @@ function reverse(camera, map, route, skip, overlay){
 	overlay.progress = 0;
 }
 
-function getStartAnaAxis(x, y, z, w, map) {
+function getStartAnaAxis(x: number, y: number, z: number, w: number, map: Maze) {
 	if(map.get((x+1)%map.size, y, z, w) === 1 || map.get((x+1+map.size)%map.size, y, z, w) === 1) return 'x';
 	if(map.get(x, (y+1)%map.size, z, w) === 1 || map.get(x, (y-1+map.size)%map.size, z, w) === 1) return 'y';
 	if(map.get(x, y, (z+1)%map.size, w) === 1 || map.get(x, y, (z-1+map.size)%map.size, w) === 1) return 'z';
 	return 'w';
 }
 
-function getDirectionToPath(pos, cell) {
-	const diffdim = (d) =>
+function getDirectionToPath(pos: Vec4, cell: Vec4) {
+	const diffdim = (d: keyof Vec4) =>
 		Math.abs(cell[d] - Math.floor(pos[d])) > 1 ?
 		pos[d] - cell[d] - 0.5 : cell[d] - pos[d] + 0.5;
 
@@ -84,11 +72,9 @@ function getDirectionToPath(pos, cell) {
 	});
 }
 
-function main(d, o){
-	"use strict";
-
-	const map = new Maze(SIZE);
-	const route = get_route(map);
+export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
+	let map = new Maze(SIZE);
+	let route = get_route(map);
 	mark_route(null, map, route, 0);
 
 	let rounds = 0;
@@ -111,13 +97,12 @@ function main(d, o){
 		const h = window.innerHeight;
 		overlay.resize(w,h);
 		camera.resize(w,h);
-		controls.width = w;
-		controls.height = h;
+		controls.resize(w, h);
 	},false);
 
 	const states = controls.states;
 
-	const update_zoom = seconds => {
+	const update_zoom = (seconds: number) => {
 		if(states.zoomin && camera.fov < Math.PI){
 			camera.fov = Math.min(camera.fov + Math.PI*seconds/2, Math.PI);
 			return true;
@@ -133,10 +118,10 @@ function main(d, o){
 	let player_control = false;
 
 	const update_cell = () => {
-		const cx = Math.floor(player.x);
-		const cy = Math.floor(player.y);
-		const cz = Math.floor(player.z);
-		const cw = Math.floor(player.w);
+		const cx = ((Math.floor(player.x)%map.size)+map.size)%map.size;
+		const cy = ((Math.floor(player.y)%map.size)+map.size)%map.size;
+		const cz = ((Math.floor(player.z)%map.size)+map.size)%map.size;
+		const cw = ((Math.floor(player.w)%map.size)+map.size)%map.size;
 
 		const val = map.get(cx,cy,cz,cw);
 		if(cx !== x || cy !== y || cz !== z || cw !== w){
@@ -144,16 +129,13 @@ function main(d, o){
 			[x,y,z,w] = [cx,cy,cz,cw];
 			if(val === 2){
 				if(rounds < path.length){
-					console.log("finished");
 					reverse(camera, map, route, ++rounds, overlay);
 					player_control = false;
 				}else{
-					rounds = 0;
-					({map, route} = reset(camera, overlay, player));
-					player_control = false;
+					throw new Error("Resetting is not yet implemented");
 				}
 				return true;
-			}else if(val === 1 || val == 4){
+			}else if(val === 1 || val === 4){
 				const nv = states.mark?3:0;
 				map.set(x,y,z,w,nv);
 				camera.setCell(x,y,z,w,nv);
@@ -173,7 +155,7 @@ function main(d, o){
 	};
 
 	let rx = 0, ry = 0;
-	const update_overlay = (seconds) => {
+	const update_overlay = (seconds: number) => {
 		if(states.mouse){
 			({mouseX: rx, mouseY: ry} = states);
 		}else{
@@ -183,14 +165,14 @@ function main(d, o){
 			if(Math.abs(ry) < .01){ ry = 0; }
 		}
 
-		const { dist } = camera.castRay(player);
+		const dist = camera.getDepth(player, rx, ry);
 		overlay.tick(player, seconds);
-		overlay.reticle({ x: rx, y: ry, dist });
+		overlay.reticle(rx, ry, dist);
 	};
 
-	const loop = new GameLoop((seconds) => {
+	const loop = new GameLoop((seconds: number) => {
 		if(player_control){
-			let change = player.update(states, map, seconds);
+			let change = player.update(states, seconds, map);
 			change = update_zoom(seconds) || change;
 			change = update_cell() || change;
 
@@ -204,16 +186,15 @@ function main(d, o){
 				const k = normalize(orthogonalize(fwd, player.fwd));
 				const t =  angle > 0.0125 ? seconds * 0.5 : angle;
 				player.fwd = vec_rot(player.fwd, k, t);
-				player.rotate('x', 'y', t);
+				player.rotate('x', 'y', t/2);
 				player.renormalize();
 				change = true;
 			}
 
-			const update_pos = (d) => {
-				const dd = 0.5 - (player[d] % 1);
+			const update_pos = (d: keyof Vec4) => {
+				const dd = 0.5 - (player[d] - Math.floor(player[d]));
 				if(Math.abs(dd) > 0.01){
 					player[d] += seconds * dd;
-					change = true;
 				}
 			};
 
