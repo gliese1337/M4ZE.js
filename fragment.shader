@@ -16,9 +16,8 @@ uniform sampler2D u_map;
 
 out vec4 outColor;
 
-int get_cell(vec4 m){
-	ivec4 i = ivec4(mod(m,float(SIZE)));
-	float r = texelFetch(u_map, ivec2(i.z*SIZE+i.w, i.x*SIZE+i.y), 0).r;
+int get_cell(ivec4 i){
+	float r = texelFetch(u_map, SIZE * i.zx + i.wy, 0).r;
 	return int(r * 255.0);
 }
 
@@ -193,17 +192,19 @@ bool isectSphere(vec4 center, float r, vec4 lorigin, vec4 ldir, out vec4 isect) 
 
 // Find the distance to the next cell boundary
 // for a particular vector component
-float cast_comp(vec4 v, float o, out float sign, out float m){
-	float delta;
+float cast_comp(vec4 v, float o, out int sgn, out int m){
+	float delta, fm;
 	if(v.x > 0.0){
-		sign = 1.0;
-		m = floor(o);
-		delta = m + 1.0 - o;
+		sgn = 1;
+		fm = floor(o);
+		delta = fm + 1.0 - o;
 	}else{
-		sign = -1.0;
-		m = ceil(o - 1.0);
-		delta = m - o;
+		sgn = SIZE - 1;
+		fm = ceil(o - 1.0);
+		delta = fm - o;
 	}
+
+	m = int(fm);
 
 	return length(vec4(delta,delta*v.yzw/v.x));
 }
@@ -224,7 +225,7 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
-	vec4 s, m;
+	ivec4 s, m;
 	vec4 dists = vec4(
 		cast_comp(v.xyzw, o.x, s.x, m.x),
 		cast_comp(v.yxzw, o.y, s.y, m.y),
@@ -239,25 +240,25 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 		float inc;
 		if(dists.x < dists.y && dists.x < dists.z && dists.x < dists.w){
 			dim = 1;
-			m.x += s.x;
+			m.x = (m.x + s.x) % SIZE;
 			inc = dists.x - dist;
 			dist = dists.x;
 			dists.x += deltas.x;
 		}else if(dists.y < dists.z && dists.y < dists.w){
 			dim = 2;
-			m.y += s.y;
+			m.y = (m.y + s.y) % SIZE;
 			inc = dists.y - dist;
 			dist = dists.y;
 			dists.y += deltas.y;
 		}else if(dists.z < dists.w){
 			dim = 3;
-			m.z += s.z;
+			m.z = (m.z + s.z) % SIZE;
 			inc = dists.z - dist;
 			dist = dists.z;
 			dists.z += deltas.z;
 		}else{
 			dim = 4;
-			m.w += s.w;
+			m.w = (m.w + s.w) % SIZE;
 			inc = dists.w - dist;
 			dist = dists.w;
 			dists.w += deltas.w;
@@ -290,15 +291,15 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 const float range = 10.0;
 
 void main(){
-	if ((get_cell(u_origin) & 128) == 128) {
+	vec4 o = mod(u_origin, float(SIZE));
+	if ((get_cell(ivec4(o)) & 128) == 128) {
 		outColor = vec4(vec3(0), 1.0);
 		return;
 	}
 
 	vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
-	
-	vec4 o = mod(u_origin, float(SIZE));
+
 	vec4 v = ray;
 
 	vec3 tints = vec3(0);
