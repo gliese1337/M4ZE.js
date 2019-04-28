@@ -118,17 +118,17 @@ export default class Maze {
 		};
 		this.grid = generate(this.start, size);
 	}
-	get(x: number, y: number, z: number, w: number) {
+	get({ x, y, z, w }: Vec4) {
 		return this.grid[w][z][y][x];
 	}
-	set(x: number, y: number, z: number, w: number, val: number) {
+	set({ x, y, z, w }: Vec4, val: number) {
 		return this.grid[w][z][y][x] = val;
 	}
 	cellIndex(x: number, y: number, z: number, w: number) {
 		const size = this.size;
 		const size2 = size * size;
 		const size3 = size2 * size;
-		return x * size3 + y * size2 + z * size + w;
+		return 4 * (x * size3 + y * size2 + z * size + w);
 	}
 	getLongestPath() {
 		const path = [];
@@ -145,13 +145,15 @@ export default class Maze {
 	}
 	flatten() {
 		const { size, grid } = this;
-		const packed = new Uint8Array(size * size * size * size);
+		const packed = new Uint8Array(4 * size * size * size * size);
 		let i = 0;
 		for (let x = 0; x < size; x++)
 			for (let y = 0; y < size; y++)
 				for (let z = 0; z < size; z++)
-					for (let w = 0; w < size; w++)
-						packed[i++] = grid[w][z][y][x];
+					for (let w = 0; w < size; w++) {
+						packed[i] = grid[w][z][y][x];
+						i += 4;
+					}
 		return packed;
 	}
 }

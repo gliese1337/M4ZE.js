@@ -2,6 +2,7 @@ import createProgramFromScripts from "./webgl-utils";
 import Maze from "./Maze";
 import Player from "./Player";
 import cast from "./Raycast";
+import { Vec4 } from "./Vectors";
 
 interface LocMap {
 	size: WebGLUniformLocation | null;
@@ -116,9 +117,7 @@ export default class Camera {
 				this.locs = locs;
 				gl.uniform1f(locs.depth, canvas.width / (2 * Math.tan(hfov / 2)));
 				gl.uniform1i(locs.size, this.mapsize);
-				gl.activeTexture(gl.TEXTURE0);
-				gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.planesize, this.planesize, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
+				this.loadMap();
 			});
 		
 		this.onready = promise.then.bind(promise);
@@ -162,15 +161,16 @@ export default class Camera {
 		gl.uniform1f(depth, w / (2 * Math.tan(fov / 2)));
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
-	setCell(x: number, y: number, z: number, w: number, val: number, defer = false) {
+	setCell({ x, y, z, w}: Vec4, val: number, defer = false) {
 		this.mapdata[this.map.cellIndex(x, y, z, w)] = val;
 		if (!defer)	this.loadMap();
 	}
 	loadMap() {
 		const gl = this.gl;
+		console.log("Reloading map.");
 		gl.activeTexture(gl.TEXTURE0);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.planesize, this.planesize, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, this.planesize, this.planesize, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, this.mapdata);
 	}
 	render(player: Player) {
 		const gl = this.gl;

@@ -1,5 +1,6 @@
 #version 300 es
-precision mediump float;
+precision highp float;
+precision lowp usampler2D;
 
 uniform int SIZE;
 
@@ -12,13 +13,12 @@ uniform vec4 u_fwd;
 
 uniform vec3 u_seed;
 uniform sampler2D u_colorscale;
-uniform sampler2D u_map;
+uniform usampler2D u_map;
 
 out vec4 outColor;
 
-int get_cell(ivec4 i){
-	float r = texelFetch(u_map, SIZE * i.zx + i.wy, 0).r;
-	return int(r * 255.0);
+uint get_cell(ivec4 i){
+	return texelFetch(u_map, SIZE * i.zx + i.wy, 0).r;
 }
 
 /*
@@ -233,7 +233,7 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 		cast_comp(v.wxyz, o.w, s.w, m.w)
 	);
 
-	int value = get_cell(m);
+	uint value = get_cell(m);
 
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
@@ -265,16 +265,16 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 		}
 
 		switch(value){
-			case 1: tints.x += inc; // blue
+			case 1u: tints.x += inc; // blue
 			break;
-			case 2:	tints.y += inc; // yellow
+			case 2u: tints.y += inc; // yellow
 			break;
-			case 3: tints.z += inc; // red
+			case 3u: tints.z += inc; // red
 		}
 
 		value = get_cell(m);
 		
-		if((value & 64) > 0){
+		if((value & 64u) > 0u){
 			vec4 center = vec4(0.5);
 			vec4 l = fract(o + dist * v);
 			if(isectSphere(center, 0.5, l, v, o)) {
@@ -283,7 +283,7 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 			}
 		}
 
-	} while(value != 128 && dist < range);
+	} while(value != 128u && dist < range);
 
 	return false;
 }
@@ -292,7 +292,7 @@ const float range = 10.0;
 
 void main(){
 	vec4 o = mod(u_origin, float(SIZE));
-	if ((get_cell(ivec4(o)) & 128) == 128) {
+	if ((get_cell(ivec4(o)) & 128u) == 128u) {
 		outColor = vec4(vec3(0), 1.0);
 		return;
 	}

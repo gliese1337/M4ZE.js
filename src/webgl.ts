@@ -26,20 +26,20 @@ function mark_route(camera: Camera | null, map: Maze, route: Route, skip: number
 	const {start, path, end} = route;
 	const mod = skip + 1;
 
-	map.set(start.x,start.y,start.z,start.w,0);
-	map.set(end.x,end.y,end.z,end.w,2);
-	path.forEach(({x,y,z,w},i) => {
+	map.set(start,0);
+	map.set(end,2);
+	path.forEach((cell,i) => {
 		if((i+1) % mod === 0){
-			map.set(x,y,z,w,1);
-			if(camera){ camera.setCell(x,y,z,w,1, true); }
+			map.set(cell,1);
+			if(camera){ camera.setCell(cell,1, true); }
 		}else{
-			map.set(x,y,z,w,4);
-			if(camera){ camera.setCell(x,y,z,w,0, true); }
+			map.set(cell,4);
+			if(camera){ camera.setCell(cell,0, true); }
 		}
 	});
 	if(camera){
-		camera.setCell(start.x,start.y,start.z,start.w,0, true);
-		camera.setCell(end.x,end.y,end.z,end.w,2, true);
+		camera.setCell(start,0, true);
+		camera.setCell(end,2, true);
 		camera.loadMap();
 	}
 }
@@ -52,10 +52,10 @@ function reverse(camera: Camera, map: Maze, route: any, skip: number, overlay: O
 	overlay.progress = 0;
 }
 
-function getStartAnaAxis(x: number, y: number, z: number, w: number, map: Maze) {
-	if(map.get((x+1)%map.size, y, z, w) === 1 || map.get((x+1+map.size)%map.size, y, z, w) === 1) return 'x';
-	if(map.get(x, (y+1)%map.size, z, w) === 1 || map.get(x, (y-1+map.size)%map.size, z, w) === 1) return 'y';
-	if(map.get(x, y, (z+1)%map.size, w) === 1 || map.get(x, y, (z-1+map.size)%map.size, w) === 1) return 'z';
+function getStartAnaAxis({ x, y, z, w }: Vec4, map: Maze) {
+	if(map.get({ x: (x+1)%map.size, y, z, w }) === 1 || map.get({ x: (x+1+map.size)%map.size, y, z, w }) === 1) return 'x';
+	if(map.get({ x, y: (y+1)%map.size, z, w }) === 1 || map.get({ x, y: (y-1+map.size)%map.size, z, w }) === 1) return 'y';
+	if(map.get({ x, y, z: (z+1)%map.size, w }) === 1 || map.get({ x, y, z: (z-1+map.size)%map.size, w }) === 1) return 'z';
 	return 'w';
 }
 
@@ -79,18 +79,18 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 
 	let rounds = 0;
 
-	let {start: {x, y, z, w}, path} = route;
-	const ana = getStartAnaAxis(x, y, z, w, map);
+	const curr_cell = { ...route.start };
+	const ana = getStartAnaAxis(curr_cell, map);
 	const player = new Player({
-		x: x+Math.random(),
-		y: y+Math.random(),
-		z: z+Math.random(),
-		w: w+Math.random(),
+		x: curr_cell.x + Math.random(),
+		y: curr_cell.y + Math.random(),
+		z: curr_cell.z + Math.random(),
+		w: curr_cell.w + Math.random(),
 	}, ana);
 
 	const controls = new Controls(d.width, d.height);
 	const camera = new Camera(d, map, Math.PI / 1.5);
-	const overlay = new Overlay(o, path.length+1);
+	const overlay = new Overlay(o, route.path.length+1);
 
 	window.addEventListener('resize',() => {
 		const w = window.innerWidth;
@@ -117,39 +117,51 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 	
 	let player_control = false;
 
-	const update_cell = () => {
-		const cx = ((Math.floor(player.x)%map.size)+map.size)%map.size;
-		const cy = ((Math.floor(player.y)%map.size)+map.size)%map.size;
-		const cz = ((Math.floor(player.z)%map.size)+map.size)%map.size;
-		const cw = ((Math.floor(player.w)%map.size)+map.size)%map.size;
+	const update_cell = ({ x: cx, y: cy, z: cz, w: cw }: Vec4) => {
+		const { size } = map;
+		cx = Math.floor(cx - size * Math.floor(cx / size));
+		cy = Math.floor(cy - size * Math.floor(cy / size));
+		cz = Math.floor(cz - size * Math.floor(cz / size));
+		cw = Math.floor(cw - size * Math.floor(cw / size));
 
-		const val = map.get(cx,cy,cz,cw);
-		if(cx !== x || cy !== y || cz !== z || cw !== w){
+		if(cx !== curr_cell.x || cy !== curr_cell.y || cz !== curr_cell.z || cw !== curr_cell.w){
 			//Enter cell
-			[x,y,z,w] = [cx,cy,cz,cw];
-			if(val === 2){
-				if(rounds < path.length){
-					reverse(camera, map, route, ++rounds, overlay);
-					player_control = false;
-				}else{
-					throw new Error("Resetting is not yet implemented");
+			curr_cell.x = cx;
+			curr_cell.y = cy;
+			curr_cell.z = cz;
+			curr_cell.w = cw;
+			
+			const val = map.get(curr_cell);
+
+			switch(val){
+				case 2:
+					if(rounds < route.path.length){
+						reverse(camera, map, route, ++rounds, overlay);
+						player_control = false;
+					}else{
+						throw new Error("Resetting is not yet implemented");
+					}
+					return true;
+				case 1: case 4: {
+					const nv = states.mark?3:0;
+					map.set(curr_cell, nv);
+					camera.setCell(curr_cell, nv);
+					overlay.progress++;
+					return true;
 				}
-				return true;
-			}else if(val === 1 || val === 4){
-				const nv = states.mark?3:0;
-				map.set(x,y,z,w,nv);
-				camera.setCell(x,y,z,w,nv);
-				overlay.progress++;
-				return true;
-			}else if(!states.mark && val === 3){
-				map.set(x,y,z,w,0);
-				camera.setCell(x,y,z,w,0);
+				case 3: if(!states.mark){
+					map.set(curr_cell, 0);
+					camera.setCell(curr_cell, 0);
+					return true;
+				}
+			}
+		}else {
+			const val = map.get({ x: cx, y: cy, z: cz, w: cw });
+			if(states.mark && val !== 3){
+				map.set(curr_cell, 3);
+				camera.setCell(curr_cell, 3);
 				return true;
 			}
-		}else if(states.mark && val !== 3){
-			map.set(x,y,z,w,3);
-			camera.setCell(x,y,z,w,3);
-			return true;
 		}
 		return false;
 	};
@@ -174,7 +186,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 		if(player_control){
 			let change = player.update(states, seconds, map);
 			change = update_zoom(seconds) || change;
-			change = update_cell() || change;
+			change = update_cell(player) || change;
 
 			if(change){ camera.render(player); }
 			update_overlay(seconds);
