@@ -2,8 +2,6 @@
 precision mediump float;
 
 uniform int SIZE;
-int SIZE2;
-int SIZE3;
 
 uniform float u_depth;
 uniform vec2 u_resolution;
@@ -20,7 +18,7 @@ out vec4 outColor;
 
 int get_cell(vec4 m){
 	ivec4 i = ivec4(mod(m,float(SIZE)));
-	float r = texelFetch(u_map, ivec2(i.x*SIZE3+i.y*SIZE2+i.z*SIZE+i.w, 0), 0).r;
+	float r = texelFetch(u_map, ivec2(i.z*SIZE+i.w, i.x*SIZE+i.y), 0).r;
 	return int(r * 255.0);
 }
 
@@ -292,9 +290,6 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 const float range = 10.0;
 
 void main(){
-	SIZE2 = SIZE*SIZE;
-	SIZE3 = SIZE*SIZE2;
-
 	if ((get_cell(u_origin) & 128) == 128) {
 		outColor = vec4(vec3(0), 1.0);
 		return;

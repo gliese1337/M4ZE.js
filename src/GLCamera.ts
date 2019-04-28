@@ -96,6 +96,7 @@ export default class Camera {
 	private gl: WebGL2RenderingContext;
 	private mapdata: Uint8Array;
 	private mapsize: number;
+	private planesize: number;
 	private _depth: number;
 	private locs: LocMap;
 	public onready: (onfulfilled: () => void) => Promise<void>;
@@ -105,6 +106,7 @@ export default class Camera {
 		this.gl = gl;
 		this.mapdata = map.flatten();
 		this.mapsize = map.size;
+		this.planesize = map.size * map.size;
 		this.locs = {} as LocMap;
 	
 		this._depth = canvas.width / (2 * Math.tan(hfov / 2));
@@ -112,10 +114,11 @@ export default class Camera {
 		const promise = initCamera(gl, canvas.width, canvas.height)
 			.then((locs: LocMap) => {
 				this.locs = locs;
-				gl.activeTexture(gl.TEXTURE0);
 				gl.uniform1f(locs.depth, canvas.width / (2 * Math.tan(hfov / 2)));
 				gl.uniform1i(locs.size, this.mapsize);
-				gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.mapdata.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
+				gl.activeTexture(gl.TEXTURE0);
+				gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.planesize, this.planesize, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
 			});
 		
 		this.onready = promise.then.bind(promise);
@@ -166,7 +169,8 @@ export default class Camera {
 	loadMap() {
 		const gl = this.gl;
 		gl.activeTexture(gl.TEXTURE0);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.mapdata.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
+		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, this.planesize, this.planesize, 0, gl.RED, gl.UNSIGNED_BYTE, this.mapdata);
 	}
 	render(player: Player) {
 		const gl = this.gl;
