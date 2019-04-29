@@ -124,7 +124,7 @@ export default class Maze {
 	set({ x, y, z, w }: Vec4, val: number) {
 		return this.grid[w][z][y][x] = val;
 	}
-	cellIndex(x: number, y: number, z: number, w: number) {
+	cellIndex({ x, y, z, w }: Vec4) {
 		const size = this.size;
 		const size2 = size * size;
 		const size3 = size2 * size;

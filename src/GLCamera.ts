@@ -161,13 +161,17 @@ export default class Camera {
 		gl.uniform1f(depth, w / (2 * Math.tan(fov / 2)));
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 	}
-	setCell({ x, y, z, w}: Vec4, val: number, defer = false) {
-		this.mapdata[this.map.cellIndex(x, y, z, w)] = val;
+	setCell(cell: Vec4, vals: number[], defer = false) {
+		const { mapdata } = this;
+		const vlen = vals.length;
+		const idx = this.map.cellIndex(cell);
+		for (let i = 0; i < vlen && i < 4; i++) {
+			mapdata[idx + i] = vals[i];
+		}
 		if (!defer)	this.loadMap();
 	}
 	loadMap() {
 		const gl = this.gl;
-		console.log("Reloading map.");
 		gl.activeTexture(gl.TEXTURE0);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, this.planesize, this.planesize, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, this.mapdata);

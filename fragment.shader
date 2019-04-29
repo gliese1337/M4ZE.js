@@ -17,8 +17,8 @@ uniform usampler2D u_map;
 
 out vec4 outColor;
 
-uint get_cell(ivec4 i){
-	return texelFetch(u_map, SIZE * i.zx + i.wy, 0).r;
+uvec4 get_cell(ivec4 i){
+	return texelFetch(u_map, SIZE * i.zx + i.wy, 0);
 }
 
 /*
@@ -192,14 +192,16 @@ bool isectSphere(vec4 center, float r, vec4 lorigin, vec4 ldir, out vec4 isect) 
 
 // Find the distance to the next cell boundary
 // for a particular vector component
-float cast_comp(vec4 v, float o, out int sgn, out int m){
+float cast_comp(vec4 v, float o, out int sgn, out int m, out float norm){
 	float delta, fm;
 	if(v.x > 0.0){
 		sgn = 1;
+		norm = 1.0;
 		fm = floor(o);
 		delta = fm + 1.0 - o;
 	}else{
 		sgn = SIZE - 1;
+		norm = -1.0;
 		fm = ceil(o - 1.0);
 		delta = fm - o;
 	}
@@ -213,7 +215,7 @@ float cast_comp(vec4 v, float o, out int sgn, out int m){
 // in each dimension. We move to whichever is closer and
 // check for a wall. Then we repeat until we've traced the
 // entire length of the ray.
-bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float range, inout vec3 tints){
+bool cast_vec(float range, float dist, inout vec4 o, inout vec4 v, inout vec3 tints, out vec4 norm, out float leg, out int dim){
 
 	v = normalize(v);
 
@@ -226,14 +228,18 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
 	ivec4 s, m;
+	vec4 xnorm = vec4(0);
+	vec4 ynorm = vec4(0);
+	vec4 znorm = vec4(0);
+	vec4 wnorm = vec4(0);
 	vec4 dists = vec4(
-		cast_comp(v.xyzw, o.x, s.x, m.x),
-		cast_comp(v.yxzw, o.y, s.y, m.y),
-		cast_comp(v.zxyw, o.z, s.z, m.z),
-		cast_comp(v.wxyz, o.w, s.w, m.w)
+		cast_comp(v.xyzw, o.x, s.x, m.x, xnorm.x),
+		cast_comp(v.yxzw, o.y, s.y, m.y, ynorm.y),
+		cast_comp(v.zxyw, o.z, s.z, m.z, znorm.z),
+		cast_comp(v.wxyz, o.w, s.w, m.w, wnorm.w)
 	);
 
-	uint value = get_cell(m);
+	uvec4 value = get_cell(m);
 
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
@@ -241,40 +247,45 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 		if(dists.x < dists.y && dists.x < dists.z && dists.x < dists.w){
 			dim = 1;
 			m.x = (m.x + s.x) % SIZE;
-			inc = dists.x - dist;
-			dist = dists.x;
+			inc = dists.x - leg;
+			leg = dists.x;
 			dists.x += deltas.x;
+			norm = xnorm;
 		}else if(dists.y < dists.z && dists.y < dists.w){
 			dim = 2;
 			m.y = (m.y + s.y) % SIZE;
-			inc = dists.y - dist;
-			dist = dists.y;
+			inc = dists.y - leg;
+			leg = dists.y;
 			dists.y += deltas.y;
+			norm = ynorm;
 		}else if(dists.z < dists.w){
 			dim = 3;
 			m.z = (m.z + s.z) % SIZE;
-			inc = dists.z - dist;
-			dist = dists.z;
+			inc = dists.z - leg;
+			leg = dists.z;
 			dists.z += deltas.z;
+			norm = znorm;
 		}else{
 			dim = 4;
 			m.w = (m.w + s.w) % SIZE;
-			inc = dists.w - dist;
-			dist = dists.w;
+			inc = dists.w - leg;
+			leg = dists.w;
 			dists.w += deltas.w;
+			norm = wnorm;
 		}
 
-		switch(value){
+		switch(value.x){
 			case 1u: tints.x += inc; // blue
 			break;
 			case 2u: tints.y += inc; // yellow
 			break;
 			case 3u: tints.z += inc; // red
+			break;
 		}
 
 		value = get_cell(m);
 		
-		if((value & 64u) > 0u){
+		if((value.x & 64u) > 0u){
 			vec4 center = vec4(0.5);
 			vec4 l = fract(o + dist * v);
 			if(isectSphere(center, 0.5, l, v, o)) {
@@ -283,16 +294,30 @@ bool cast_vec(inout vec4 o, inout vec4 v, out int dim, inout float dist, float r
 			}
 		}
 
-	} while(value != 128u && dist < range);
+	} while(value.x != 128u && (dist + leg) < range);
 
 	return false;
+}
+
+vec4 raytrace(float range, inout float dist, inout vec4 o, inout vec4 v, out vec3 tints, out int dim){
+	tints = vec3(0);
+	float leg;
+	vec4 norm;
+	bool reflected;
+	do {
+		reflected = cast_vec(range, dist, o, v, tints, norm, leg, dim);
+		dist += leg;
+	} while(reflected);
+	v = o + leg * v;
+
+	return norm;
 }
 
 const float range = 10.0;
 
 void main(){
 	vec4 o = mod(u_origin, float(SIZE));
-	if ((get_cell(ivec4(o)) & 128u) == 128u) {
+	if ((get_cell(ivec4(o)).x & 128u) == 128u) {
 		outColor = vec4(vec3(0), 1.0);
 		return;
 	}
@@ -300,28 +325,32 @@ void main(){
 	vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
 
-	vec4 v = ray;
-
-	vec3 tints = vec3(0);
-	float dist = 0.0;
 	int dim;
+	float dist = 0.0;
+	vec3 tints = vec3(0);
+	vec4 norm = raytrace(range, dist, o, ray, tints, dim);
 
-	bool reflected;
-	do reflected = cast_vec(o, v, dim, dist, range, tints);
-	while(reflected);
-
-	v = o + dist * v;
-	vec3 tex = dist >= range ? vec3(0) : calc_tex(dim, v);
+	vec3 tex;
+	if (dist >= range) {
+		tex = vec3(0);
+	} else {
+		tex = calc_tex(dim, ray);
+		ray = reflect(ray, norm);
+		vec3 ntints;
+		raytrace(range, dist, o, ray, ntints, dim);
+		tints += 0.75 * ntints;
+	}
 
 	float tintdist = length(tints);
 	if(tintdist > 0.0){
-		tints = tints / tintdist;
+		tints = tints / (tints.x + tints.y + tints.z);
 
 		vec3 tint = vec3(0.0,0.0,1.0)*tints.x
 				+ vec3(0.71,0.71,0.0)*tints.y
 				+ vec3(1.0,0.0,0.0)*tints.z;
 
-		tex = mix(tex, tint, min(tintdist, 0.5)); 
+		float mixfrac = tintdist / (1.5 + tintdist);
+		tex = mix(tex, tint, mixfrac); 
 	}
 
 	float light = get_light(u_depth, length(coords), dist, tintdist);

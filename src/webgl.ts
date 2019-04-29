@@ -22,26 +22,20 @@ function get_route(map: Maze): Route {
 	return { start, path, end };
 }
 
-function mark_route(camera: Camera | null, map: Maze, route: Route, skip: number){
+function mark_route(camera: Camera, map: Maze, route: Route, skip: number){
 	const {start, path, end} = route;
 	const mod = skip + 1;
 
-	map.set(start,0);
-	map.set(end,2);
 	path.forEach((cell,i) => {
-		if((i+1) % mod === 0){
-			map.set(cell,1);
-			if(camera){ camera.setCell(cell,1, true); }
-		}else{
-			map.set(cell,4);
-			if(camera){ camera.setCell(cell,0, true); }
-		}
+		const blue = +((i+1) % mod === 0);
+		map.set(cell, blue);
+		camera.setCell(cell, [blue, 255], true);
 	});
-	if(camera){
-		camera.setCell(start,0, true);
-		camera.setCell(end,2, true);
-		camera.loadMap();
-	}
+
+	map.set(start, 0);
+	map.set(end, 2);
+	camera.setCell(start, [0, 255], true);
+	camera.setCell(end, [2, 255], false);
 }
 
 function reverse(camera: Camera, map: Maze, route: any, skip: number, overlay: Overlay){
@@ -73,9 +67,8 @@ function getDirectionToPath(pos: Vec4, cell: Vec4) {
 }
 
 export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
-	let map = new Maze(SIZE);
-	let route = get_route(map);
-	mark_route(null, map, route, 0);
+	const map = new Maze(SIZE);
+	const route = get_route(map);
 
 	let rounds = 0;
 
@@ -91,6 +84,8 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 	const controls = new Controls(d.width, d.height);
 	const camera = new Camera(d, map, Math.PI / 1.5);
 	const overlay = new Overlay(o, route.path.length+1);
+
+	mark_route(camera, map, route, 0);
 
 	window.addEventListener('resize',() => {
 		const w = window.innerWidth;
@@ -145,13 +140,13 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 				case 1: case 4: {
 					const nv = states.mark?3:0;
 					map.set(curr_cell, nv);
-					camera.setCell(curr_cell, nv);
+					camera.setCell(curr_cell, [nv]);
 					overlay.progress++;
 					return true;
 				}
 				case 3: if(!states.mark){
 					map.set(curr_cell, 0);
-					camera.setCell(curr_cell, 0);
+					camera.setCell(curr_cell, [0]);
 					return true;
 				}
 			}
@@ -159,7 +154,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 			const val = map.get({ x: cx, y: cy, z: cz, w: cw });
 			if(states.mark && val !== 3){
 				map.set(curr_cell, 3);
-				camera.setCell(curr_cell, 3);
+				camera.setCell(curr_cell, [3]);
 				return true;
 			}
 		}
