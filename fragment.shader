@@ -166,15 +166,6 @@ vec3 calc_tex(int dim, vec4 ray){
 	return mix(tint/8.0, base, layered_noise(coords, 5, 3));
 }
 
-/* Flashlight Algorithm */
-const float flashlight = 2.5;
-float get_light(float x, float y, float dist, float tint){
-	float t = atan(y, x);
-	float g = exp(-t*t/0.25);
-	float dm = flashlight*exp2(-dist); // Dim based on distance
-	return min(2.0, dm * g + tint);
-}
-
 /*
  * RAYCASTING
  */
@@ -215,15 +206,12 @@ float cast_comp(vec4 v, float o, out int sgn, out int m, out float norm){
 // in each dimension. We move to whichever is closer and
 // check for a wall. Then we repeat until we've traced the
 // entire length of the ray.
-bool cast_vec(float range, float dist, inout vec4 o, inout vec4 v, inout vec3 tints, out vec4 norm, out float leg, out int dim){
-
-	v = normalize(v);
-
+bool cast_vec(inout float range, inout vec4 o, vec4 v, inout float light_dist, inout vec3 tints, out vec4 norm, out float dist, out int dim){
 	// Inverting the elements of a normalized vector
 	// gives the distance you have to move along that
 	// vector to hit a cell boundary perpendicular
 	// to that dimension.
-	vec4 deltas = abs(vec4(1.0/v.x, 1.0/v.y, 1.0/v.z, 1.0/v.w));
+	vec4 deltas = abs(1.0 / v);
 
 	// Get the initial distances from the starting
 	// point to the next cell boundaries.
@@ -241,35 +229,36 @@ bool cast_vec(float range, float dist, inout vec4 o, inout vec4 v, inout vec3 ti
 
 	uvec4 value = get_cell(m);
 
+	dist = 0.0;
 	do {// Find the next closest cell boundary
 		// and increment distances appropriately
 		float inc;
 		if(dists.x < dists.y && dists.x < dists.z && dists.x < dists.w){
 			dim = 1;
 			m.x = (m.x + s.x) % SIZE;
-			inc = dists.x - leg;
-			leg = dists.x;
+			inc = dists.x - dist;
+			dist = dists.x;
 			dists.x += deltas.x;
 			norm = xnorm;
 		}else if(dists.y < dists.z && dists.y < dists.w){
 			dim = 2;
 			m.y = (m.y + s.y) % SIZE;
-			inc = dists.y - leg;
-			leg = dists.y;
+			inc = dists.y - dist;
+			dist = dists.y;
 			dists.y += deltas.y;
 			norm = ynorm;
 		}else if(dists.z < dists.w){
 			dim = 3;
 			m.z = (m.z + s.z) % SIZE;
-			inc = dists.z - leg;
-			leg = dists.z;
+			inc = dists.z - dist;
+			dist = dists.z;
 			dists.z += deltas.z;
 			norm = znorm;
 		}else{
 			dim = 4;
 			m.w = (m.w + s.w) % SIZE;
-			inc = dists.w - leg;
-			leg = dists.w;
+			inc = dists.w - dist;
+			dist = dists.w;
 			dists.w += deltas.w;
 			norm = wnorm;
 		}
@@ -283,34 +272,50 @@ bool cast_vec(float range, float dist, inout vec4 o, inout vec4 v, inout vec3 ti
 			break;
 		}
 
+		light_dist += inc * float(value.y) / 255.0;
+
 		value = get_cell(m);
 		
 		if((value.x & 64u) > 0u){
 			vec4 center = vec4(0.5);
 			vec4 l = fract(o + dist * v);
 			if(isectSphere(center, 0.5, l, v, o)) {
+				float sdist = distance(v, o);
+				dist += sdist;
+				light_dist += sdist * float(value.y) / 255.0;
 				v = reflect(l, normalize(o - center));
+				range -= dist;
 				return true;
 			}
 		}
 
-	} while(value.x != 128u && (dist + leg) < range);
+	} while(value.x != 128u && dist < range);
 
+	range -= dist;
 	return false;
 }
 
-vec4 raytrace(float range, inout float dist, inout vec4 o, inout vec4 v, out vec3 tints, out int dim){
+vec4 raytrace(float range, inout vec4 o, inout vec4 v, inout float light_dist, out vec3 tints, out float dist, out int dim){
 	tints = vec3(0);
-	float leg;
+	v = normalize(v);
 	vec4 norm;
 	bool reflected;
-	do {
-		reflected = cast_vec(range, dist, o, v, tints, norm, leg, dim);
-		dist += leg;
-	} while(reflected);
-	v = o + leg * v;
+	float remaining = range;
+	do reflected = cast_vec(remaining, o, v, light_dist, tints, norm, dist, dim);
+	while(reflected);
+	v = o + dist * v;
+	dist = range - remaining;
 
 	return norm;
+}
+
+/* Flashlight Algorithm */
+const float flashlight = 2.5;
+float get_light(float x, float y, float dist, float illumination){
+	float t = atan(y, x);
+	float g = exp(-t*t/0.25);
+	float dm = flashlight*exp2(-dist); // Dim based on distance
+	return min(2.0, dm * g + illumination);
 }
 
 const float range = 10.0;
@@ -326,33 +331,30 @@ void main(){
 	vec4 ray = u_fwd*u_depth + u_rgt*coords.x + u_up*coords.y;
 
 	int dim;
-	float dist = 0.0;
-	vec3 tints = vec3(0);
-	vec4 norm = raytrace(range, dist, o, ray, tints, dim);
+	float dist;
+	vec3 tints;
+	float light_dist = 0.0;
+	vec4 norm = raytrace(range, o, ray, light_dist, tints, dist, dim);
 
-	vec3 tex;
-	if (dist >= range) {
-		tex = vec3(0);
-	} else {
-		tex = calc_tex(dim, ray);
-		ray = reflect(ray, norm);
-		vec3 ntints;
-		raytrace(range, dist, o, ray, ntints, dim);
-		tints += 0.75 * ntints;
-	}
+	vec3 tex = calc_tex(dim, ray);
+	ray = reflect(ray, norm);
+	vec3 ntints;
+	float tint_dist; // ignored here, actual usage is below
+	raytrace(range, o, ray, light_dist, ntints, tint_dist, dim);
+	tints += 0.5 * ntints;
 
-	float tintdist = length(tints);
-	if(tintdist > 0.0){
+	tint_dist = length(tints);
+	if(tint_dist > 0.0){
 		tints = tints / (tints.x + tints.y + tints.z);
 
 		vec3 tint = vec3(0.0,0.0,1.0)*tints.x
 				+ vec3(0.71,0.71,0.0)*tints.y
 				+ vec3(1.0,0.0,0.0)*tints.z;
 
-		float mixfrac = tintdist / (1.5 + tintdist);
+		float mixfrac = tint_dist / (1.5 + tint_dist);
 		tex = mix(tex, tint, mixfrac); 
 	}
 
-	float light = get_light(u_depth, length(coords), dist, tintdist);
+	float light = get_light(u_depth, length(coords), dist, light_dist);
 	outColor = vec4(min(tex * light, 1.0), 1.0);
 }

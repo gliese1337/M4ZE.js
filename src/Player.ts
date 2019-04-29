@@ -150,10 +150,10 @@ export default class Player implements Vec4 {
 			const { clipX: x, clipY: y } = controls;
 			moved = true;
 			if (x !== 0) {
-				this.rotate('z', 'x', seconds * x * turnRate);
+				this.rotate(controls.vy, controls.ky, seconds * x * turnRate);
 			}
 			if (y !== 0) {
-				this.rotate('z', 'y', seconds * y * turnRate);
+				this.rotate(controls.kp, controls.vp, seconds * y * turnRate);
 			}
 		}
 		if (moved) {

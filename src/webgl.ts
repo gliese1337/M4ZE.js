@@ -6,7 +6,7 @@ import GameLoop from "./GameLoop";
 import Maze from "./Maze.js";
 import { vec_rot, normalize, orthogonalize, angle_between, Vec4 } from "./Vectors";
 
-const SIZE = 3;
+const SIZE = 6;
 
 interface Route {
 	start: Vec4;
@@ -29,7 +29,7 @@ function mark_route(camera: Camera, map: Maze, route: Route, skip: number){
 	path.forEach((cell,i) => {
 		const blue = +((i+1) % mod === 0);
 		map.set(cell, blue);
-		camera.setCell(cell, [blue, 255], true);
+		camera.setCell(cell, [blue, 191], true);
 	});
 
 	map.set(start, 0);
@@ -108,7 +108,6 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 		}
 		return false;
 	};
-
 	
 	let player_control = false;
 
@@ -187,7 +186,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement){
 			update_overlay(seconds);
 		}else{
 			let change = false;
-			const fwd = getDirectionToPath(player, route.path[1]);
+			const fwd = getDirectionToPath(player, route.path[0]);
 			const angle = Math.abs(angle_between(fwd, player.fwd));
 			if(angle > 1e-5){
 				const k = normalize(orthogonalize(fwd, player.fwd));
