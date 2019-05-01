@@ -81,17 +81,40 @@ export default class Player implements Vec4 {
   }
 
   translate(seconds: number, map: Maze) {
-    const { velocity } = this;
+    let { velocity } = this;
 
     const inc = Math.sqrt(len2(velocity)) * seconds;
-    const dist = cast(this, velocity, inc + 0.05, map) - 0.001;
-    const scale = dist < inc ? seconds * dist / inc : seconds;
+    let { distance, norm } = cast(this, velocity, inc + 0.05, map);
+    distance -= 0.001;
 
-    this.x += velocity.x * scale;
-    this.y += velocity.y * scale;
-    this.z += velocity.z * scale;
-    this.w += velocity.w * scale;
-    
+    if (distance < inc) {
+      const scale = seconds * distance / inc;
+
+      // Translate up to the point of impact
+      this.x += velocity.x * scale;
+      this.y += velocity.y * scale;
+      this.z += velocity.z * scale;
+      this.w += velocity.w * scale;
+
+      // Translate along the surface
+      const [ p, ] = project(velocity, norm);
+      velocity = vec_add(velocity, -1, p);
+      seconds -= scale;
+
+      this.x += velocity.x * scale;
+      this.y += velocity.y * scale;
+      this.z += velocity.z * scale;
+      this.w += velocity.w * scale;
+
+      this.velocity = velocity;
+
+    } else {
+      this.x += velocity.x * seconds;
+      this.y += velocity.y * seconds;
+      this.z += velocity.z * seconds;
+      this.w += velocity.w * seconds;
+    }
+
     return true;
   }
  
@@ -100,10 +123,14 @@ export default class Player implements Vec4 {
       (controls.fwd || controls.bak) ? 2 : 15;
 
     const { velocity: v } = this;
+    
+    // Gravity
+    v.w -= 0.05 * seconds;
+
+    // Air resistance
     const speed2 = len2(v);
     if (speed2 > .0001) {
       const speed = Math.sqrt(speed2);
-      console.log(speed);
       const scale = Math.max(speed - speed2 * C * seconds, 0) / speed;
 
       v.x *= scale;
@@ -116,10 +143,6 @@ export default class Player implements Vec4 {
       this.velocity = vec_add(v, 0.75 * seconds, this.fwd);
     } else if (controls.bak) {
 	    this.velocity = vec_add(v, -0.75 * seconds, this.fwd);
-    }
-
-    if (len2(this.velocity) < .0001) {
-      this.velocity = { x: 0, y: 0, z: 0, w: 0 };
     }
   }
 

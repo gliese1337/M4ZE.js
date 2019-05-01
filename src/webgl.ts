@@ -76,10 +76,10 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   const curr_cell = { ...route.start };
   const ana = getStartAnaAxis(curr_cell, map);
   const player = new Player({
-    x: curr_cell.x + Math.random(),
-    y: curr_cell.y + Math.random(),
-    z: curr_cell.z + Math.random(),
-    w: curr_cell.w + Math.random(),
+    x: curr_cell.x + 0.1 + 0.8 * Math.random(),
+    y: curr_cell.y + 0.1 + 0.8 * Math.random(),
+    z: curr_cell.z + 0.1 + 0.8 * Math.random(),
+    w: curr_cell.w + 0.1 + 0.8 * Math.random(),
   }, ana);
 
   const controls = new Controls(d.width, d.height);
@@ -172,9 +172,9 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       if (Math.abs(ry) < .01) { ry = 0; }
     }
 
-    const dist = camera.getDepth(player, rx, ry);
+    const { distance } = camera.getDepth(player, rx, ry);
     overlay.tick(player, seconds);
-    overlay.reticle(rx, ry, dist);
+    overlay.reticle(rx, ry, distance);
   };
 
   const loop = new GameLoop((seconds: number) => {
