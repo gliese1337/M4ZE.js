@@ -1,4 +1,4 @@
-import { Vec4, normalize, dot, move_from, fract } from "./Vectors";
+import { Vec4, normalize, dot, vec_add, fract } from "./Vectors";
 import Maze from "./Maze";
 
 function isectSphere(c: Vec4, r: number, o: Vec4, d: Vec4): number {
@@ -99,7 +99,7 @@ export default function cast(o: Vec4, v: Vec4, range: number, map: Maze) {
         
         if ((value & 64) > 0) {
             const center = { x: 0.5, y: 0.5, z: 0.5, w: 0.5 };
-            const l = fract(move_from(o, distance, v));
+            const l = fract(vec_add(o, distance, v));
             const isect = isectSphere(center, 0.5, l, v);
       if (isFinite(isect)) {
         return distance + isect;

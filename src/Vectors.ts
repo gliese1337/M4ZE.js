@@ -5,11 +5,25 @@ export interface Vec4 {
   w: number;
 }
 
+export function len2(v: Vec4) {
+  return v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w;
+}
+
 export function dot(v: Vec4, k: Vec4): number {
   return v.x*k.x+v.y*k.y+v.z*k.z+v.w*k.w;
 }
 
-export function move_from(o: Vec4, dist: number, d: Vec4) {
+export function project(v: Vec4, unit: Vec4): [ Vec4, number ] {
+  const a = dot(v, unit);
+  return [{
+    x: unit.x * a,
+    y: unit.y * a,
+    z: unit.z * a,
+    w: unit.w * a,
+  }, a];
+}
+
+export function vec_add(o: Vec4, dist: number, d: Vec4) {
   return {
         x: o.x + dist * d.x,
         y: o.y + dist * d.y,

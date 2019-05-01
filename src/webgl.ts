@@ -6,7 +6,7 @@ import GameLoop from "./GameLoop";
 import Maze from "./Maze.js";
 import { vec_rot, normalize, orthogonalize, angle_between, Vec4 } from "./Vectors";
 
-const SIZE = 6;
+const SIZE = 4;
 
 interface Route {
   start: Vec4;
@@ -193,7 +193,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
         const k = normalize(orthogonalize(fwd, player.fwd));
         const t =  angle > 0.0125 ? seconds * 0.5 : angle;
         player.fwd = vec_rot(player.fwd, k, t);
-        player.rotate('x', 'y', t/2);
+        player.rotate('x', 'y', t/2, false);
         player.renormalize();
         change = true;
       }
@@ -211,7 +211,8 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       update_pos('w');
 
       if (!change) {
-        console.log("Transferring control to the player");
+		console.log("Transferring control to the player");
+		player.velocity = { x: 0, y: 0, z: 0, w: 0 };
         player_control = true;
       }
 
