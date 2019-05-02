@@ -1,9 +1,3 @@
-import Player from "./Player";
-
-function get_angle(c: number) {
-  return Math.round(180*Math.acos(c)/Math.PI);
-}
-
 export default class Overlay {
   private ctx: CanvasRenderingContext2D;
   private fpsw: number[] = [];
@@ -48,72 +42,7 @@ export default class Overlay {
     const d = Math.round(100 * dist) / 10;
     ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
   }
-  labeledValue(label: string, val: string, format = val) {
-    const { ctx } = this;
-    const lsize = ctx.measureText(label);
-    const vsize = ctx.measureText(format);
-    const height = 12; //from the font size; measureText sadly omits the height
-    ctx.fillText(label, 0, 0);
-    ctx.rect(lsize.width + 4, 1, vsize.width + 4, height + 1);
-    ctx.stroke();
-    ctx.fillText(val, lsize.width + 6, 0);
-    return {
-      width: lsize.width + vsize.width + 8,
-      height: height + 2
-    };
-  }
-  position(player: Player) {
-    const { ctx } = this;
-    let width, height, nh;
-    let wtotal = 0;
-    ctx.save();
-    ({ width, height } = this.labeledValue("Position: x:", Math.floor(player.x) + ""));
-    wtotal += width;
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("y:", Math.floor(player.y) + ""));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("z:", Math.floor(player.z) + ""));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("w:", Math.floor(player.w) + ""));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.restore();
-    return {
-      width: wtotal + 12,
-      height
-    };
-  }
-  orientation(player: Player) {
-    const { ctx } = this;
-    const { fwd } = player;
-    let width, height, nh;
-    let wtotal = 0;
-    ctx.save();
-    ({ width, height } = this.labeledValue("Orientation: x:", get_angle(fwd.x) + "", "000"));
-    wtotal += width;
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("y:", get_angle(fwd.y) + "", "000"));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("z:", get_angle(fwd.z) + "", "000"));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.translate(width + 4, 0);
-    ({ width, height: nh } = this.labeledValue("w:", get_angle(fwd.w) + "", "000"));
-    wtotal += width;
-    height = Math.max(height, nh);
-    ctx.restore();
-    return {
-      width: wtotal + 12,
-      height
-    };
-  }
-  tick(player: Player, seconds: number) {
+  tick(seconds: number) {
     const { canvas, ctx, fpsw, len, progress } = this;
     const { height, width } = canvas;
     if (fpsw.length > 20) {
@@ -128,26 +57,25 @@ export default class Overlay {
     // Draw panel
     ctx.beginPath();
     ctx.moveTo(0, height);
-    ctx.lineTo(0, height - 50);
-    ctx.lineTo(200, height - 50);
-    ctx.arcTo(240, height - 50, 240, height - 10, 40);
-    ctx.lineTo(240, height);
+    ctx.lineTo(0, height - 20);
+    ctx.lineTo(45, height - 20);
+    ctx.arcTo(85, height - 20, 85, height, 20);
+    ctx.lineTo(85, height);
     ctx.closePath();
     ctx.fillStyle = "#0f0f0f";
     ctx.fill();
+    ctx.stroke();
+
     ctx.save();
     ctx.font = "12px Calibri";
     ctx.textBaseline = "top";
     ctx.fillStyle = "#02CC02";
     ctx.strokeStyle = "#02CC02";
     ctx.lineWidth = 1;
-    ctx.translate(5, height - 48);
-    let lh;
-    ({ height: lh } = this.position(player));
-    ctx.translate(0, lh + 2);
-    ({ height: lh } = this.orientation(player));
-    ctx.translate(0, lh + 2);
-    this.labeledValue("Progress:", Math.round(100 * progress / len) + "%");
+    ctx.translate(5, height - 16);
+    
+    ctx.fillText("Progress:", 0, 0);
+    ctx.fillText(Math.round(100 * progress / len) + "%", 50, 0);
     ctx.restore();
   }
 }

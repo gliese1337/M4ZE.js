@@ -173,7 +173,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
     }
 
     const { distance } = camera.getDepth(player, rx, ry);
-    overlay.tick(player, seconds);
+    overlay.tick(seconds);
     overlay.reticle(rx, ry, distance);
   };
 
