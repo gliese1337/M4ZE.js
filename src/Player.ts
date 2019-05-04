@@ -1,4 +1,4 @@
-import { Vec4, vec_rot, normalize, orthogonalize, len2, project, vec_add } from "./Vectors";
+import { Vec4, len2, vec_rot2, unit, orthonorm, vec_add, reject } from "./Vectors";
 import { ControlStates } from "./Controls";
 import Maze from "./Maze";
 import cast from "./Raycast";
@@ -51,40 +51,29 @@ export default class Player implements Vec4 {
   rotate(v: keyof Vec4, k: keyof Vec4, angle: number, accelerating: boolean) {
     const vn = planes[v] as "rgt"|"fwd"|"up"|"ana";
     const kn = planes[k] as "rgt"|"fwd"|"up"|"ana";
-    const x = this[vn];
-    const y = this[kn];
-    
+ 
     if (accelerating && (vn === "fwd" || kn === "fwd")) {
-      const [ p, mag ] = project(this.velocity, this.fwd);
-      this.velocity = vec_add(this.velocity, -1, p);
-
-      this[vn] = vec_rot(x, y, angle);
-      this[kn] = vec_rot(y, x, -angle);
-
-      this.velocity = vec_add(this.velocity, mag, this.fwd);
+      const mag = reject(this.velocity, this.fwd);
+      vec_rot2(this[vn], this[kn], angle);
+      vec_add(this.velocity, mag, this.fwd);
     } else {
-      this[vn] = vec_rot(x, y, angle);
-      this[kn] = vec_rot(y, x, -angle);
+      vec_rot2(this[vn], this[kn], angle);
     }
   }
 
   renormalize() {
-    let { rgt, up, fwd, ana } = this;
-    fwd = normalize(fwd);
-    this.fwd = fwd;
-    rgt = normalize(orthogonalize(rgt, fwd));
-    this.rgt = rgt;
-    up = normalize(orthogonalize(orthogonalize(up, fwd), rgt));
-    this.up = up;
-    ana = normalize(orthogonalize(orthogonalize(orthogonalize(ana, fwd), rgt), up));
-    this.ana = ana;
+    const { rgt, up, fwd, ana } = this;
+    orthonorm(fwd, []);
+    orthonorm(rgt, [fwd]);
+    orthonorm(up, [fwd, rgt]);
+    orthonorm(ana, [fwd, rgt, up]);
   }
 
   translate(seconds: number, map: Maze) {
     let { velocity } = this;
 
     const inc = Math.sqrt(len2(velocity)) * seconds;
-    let { distance, norm } = cast(this, velocity, inc + 0.05, map);
+    let { distance, norm } = cast(this, unit(velocity), inc + 0.05, map);
     distance -= 0.001;
 
     if (distance < inc) {
@@ -97,23 +86,14 @@ export default class Player implements Vec4 {
       this.w += velocity.w * scale;
 
       // Translate along the surface
-      const [ p, ] = project(velocity, norm);
-      velocity = vec_add(velocity, -1, p);
+      reject(velocity, norm);
       seconds -= scale;
-
-      this.x += velocity.x * scale;
-      this.y += velocity.y * scale;
-      this.z += velocity.z * scale;
-      this.w += velocity.w * scale;
-
-      this.velocity = velocity;
-
-    } else {
-      this.x += velocity.x * seconds;
-      this.y += velocity.y * seconds;
-      this.z += velocity.z * seconds;
-      this.w += velocity.w * seconds;
     }
+
+    this.x += velocity.x * seconds;
+    this.y += velocity.y * seconds;
+    this.z += velocity.z * seconds;
+    this.w += velocity.w * seconds;
 
     return true;
   }
@@ -140,9 +120,9 @@ export default class Player implements Vec4 {
     }
 
     if (controls.fwd) {
-      this.velocity = vec_add(v, 0.75 * seconds, this.fwd);
+      vec_add(v, 0.75 * seconds, this.fwd);
     } else if (controls.bak) {
-	    this.velocity = vec_add(v, -0.75 * seconds, this.fwd);
+	    vec_add(v, -0.75 * seconds, this.fwd);
     }
   }
 

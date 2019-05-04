@@ -2,7 +2,7 @@ import createProgramFromScripts from "./webgl-utils";
 import Maze from "./Maze";
 import Player from "./Player";
 import cast from "./Raycast";
-import { Vec4 } from "./Vectors";
+import { Vec4, normalize } from "./Vectors";
 
 interface LocMap {
   size: WebGLUniformLocation | null;
@@ -146,7 +146,9 @@ export default class Camera {
       y: fwd.y * depth + rgt.y * x + up.y * y,
       z: fwd.z * depth + rgt.z * x + up.z * y,
       w: fwd.w * depth + rgt.w * x + up.z * y
-    };
+	};
+	
+	normalize(ray);
 
     return cast(player, ray, this.mapsize * 2, this.map);
   }

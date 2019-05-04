@@ -4,7 +4,7 @@ import Player from "./Player";
 import Controls from "./Controls";
 import GameLoop from "./GameLoop";
 import Maze from "./Maze.js";
-import { vec_rot, normalize, orthogonalize, angle_between, Vec4 } from "./Vectors";
+import { vec_rot, normalize, orthonorm, angle_between, Vec4 } from "./Vectors";
 
 const SIZE = 4;
 
@@ -59,12 +59,15 @@ function getDirectionToPath(pos: Vec4, cell: Vec4) {
     Math.abs(cell[d] - Math.floor(pos[d])) > 1 ?
     pos[d] - cell[d] - 0.5 : cell[d] - pos[d] + 0.5;
 
-  return normalize({
+  const d = {
     x: diffdim('x'),
     y: diffdim('y'),
     z: diffdim('z'),
     w: diffdim('w'),
-  });
+  };
+
+  normalize(d);
+  return d;
 }
 
 export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
@@ -187,12 +190,12 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       update_overlay(seconds);
     } else {
       let change = false;
-      const fwd = getDirectionToPath(player, route.path[0]);
-      const angle = Math.abs(angle_between(fwd, player.fwd));
+      const k = getDirectionToPath(player, route.path[0]);
+      const angle = Math.abs(angle_between(k, player.fwd));
       if (angle > 1e-5) {
-        const k = normalize(orthogonalize(fwd, player.fwd));
+        orthonorm(k, [player.fwd]);
         const t =  angle > 0.0125 ? seconds * 0.5 : angle;
-        player.fwd = vec_rot(player.fwd, k, t);
+        vec_rot(player.fwd, k, t);
         player.rotate('x', 'y', t/2, false);
         player.renormalize();
         change = true;

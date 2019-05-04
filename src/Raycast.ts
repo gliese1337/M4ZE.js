@@ -1,15 +1,25 @@
 import { Vec4, normalize, dot, vec_add, fract } from "./Vectors";
 import Maze from "./Maze";
 
+const oc = { x: 0, y: 0, z: 0, w: 0 };
 function isectSphere(c: Vec4, r: number, o: Vec4, d: Vec4): [ number, Vec4 ] {
-  const oc = { x: o.x - c.x, y: o.y - c.y, z: o.z - c.z, w: o.w - c.w };
+  oc.x = o.x - c.x;
+  oc.y = o.y - c.y;
+  oc.z = o.z - c.z;
+  oc.w = o.w - c.w;
+
   const loc = dot(d, oc);
   const det = loc*loc + r*r - dot(oc, oc);
   if (det < 0) return [ Infinity, d ];
+
   const sqrtdet = Math.sqrt(det);
   const dist = Math.min(sqrtdet - loc, -sqrtdet - loc);
-  const norm = normalize(vec_add(vec_add(o, dist, d), -1, c));
-  return [ dist, norm ];
+
+  // calc surface normal, replacing `o` in memory
+  vec_add(o, dist, d);
+  vec_add(o, -1, c);
+  normalize(o);
+  return [ dist, o ];
 }
 
 // Find the distance to the next cell boundary
@@ -50,8 +60,6 @@ function cast_comp(x: number, y: number, z: number, w: number, o: number, size: 
 // traced the entire length of the ray.
 export default function cast(o: Vec4, v: Vec4, range: number, map: Maze) {
   const { size } = map;
-
-  v = normalize(v);
     
   // Inverting the elements of a normalized vector
   // gives the distance you have to move along that
@@ -114,10 +122,12 @@ export default function cast(o: Vec4, v: Vec4, range: number, map: Maze) {
     
     if ((value & 64) > 0) {
       const center = { x: 0.5, y: 0.5, z: 0.5, w: 0.5 };
-      const l = fract(vec_add(o, distance, v));
-      const [ isect, n ] = isectSphere(center, 0.5, l, v);
+      const l = { ...o };
+      vec_add(l, distance, v);
+      fract(l);
+      const [ isect, norm ] = isectSphere(center, 0.5, l, v);
       if (isFinite(isect)) {
-        return { distance: distance + isect, norm: n };
+        return { distance: distance + isect, norm };
       }
     }
 

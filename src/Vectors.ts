@@ -13,65 +13,93 @@ export function dot(v: Vec4, k: Vec4): number {
   return v.x*k.x+v.y*k.y+v.z*k.z+v.w*k.w;
 }
 
-export function project(v: Vec4, unit: Vec4): [ Vec4, number ] {
+export function reject(v: Vec4, unit: Vec4) {
   const a = dot(v, unit);
-  return [{
-    x: unit.x * a,
-    y: unit.y * a,
-    z: unit.z * a,
-    w: unit.w * a,
-  }, a];
+
+  v.x -= unit.x * a;
+  v.y -= unit.y * a;
+  v.z -= unit.z * a;
+  v.w -= unit.w * a;
+
+  return a;
 }
 
 export function vec_add(o: Vec4, dist: number, d: Vec4) {
-  return {
-        x: o.x + dist * d.x,
-        y: o.y + dist * d.y,
-        z: o.z + dist * d.z,
-        w: o.w + dist * d.w,
-    };
+  o.x += dist * d.x;
+  o.y += dist * d.y;
+  o.z += dist * d.z;
+  o.w += dist * d.w;
 }
 
 export function fract(v: Vec4) {
-  return {
-    x: v.x - Math.floor(v.x),
-    y: v.y - Math.floor(v.y),
-    z: v.z - Math.floor(v.z),
-    w: v.w - Math.floor(v.w),
-  };
+  v.x -= Math.floor(v.x);
+  v.y -= Math.floor(v.y);
+  v.z -= Math.floor(v.z);
+  v.w -= Math.floor(v.w);
 }
 
-//Rotate a vector in the plane defined by itself and another vector
-export function vec_rot(v: Vec4, k: Vec4, t: number): Vec4 {
+//Destructively rotate a vector in the plane defined by itself and another vector
+export function vec_rot(v: Vec4, k: Vec4, t: number) {
   const cos = Math.cos(t);
   const sin = Math.sin(t);
 
-  return {
-    x: v.x*cos + k.x*sin,
-    y: v.y*cos + k.y*sin,
-    z: v.z*cos + k.z*sin,
-    w: v.w*cos + k.w*sin
-  };
+  v.x = v.x*cos + k.x*sin;
+  v.y = v.y*cos + k.y*sin;
+  v.z = v.z*cos + k.z*sin;
+  v.w = v.w*cos + k.w*sin;
 }
 
-export function normalize(v: Vec4): Vec4 {
+//Destructively rotate two vectors in the plane they define
+export function vec_rot2(v: Vec4, k: Vec4, t: number) {
+  const cos = Math.cos(t);
+  const sin = Math.sin(t);
+  const { x, y, z, w } = v;
+
+  v.x = x*cos + k.x*sin;
+  v.y = y*cos + k.y*sin;
+  v.z = z*cos + k.z*sin;
+  v.w = w*cos + k.w*sin;
+
+  k.x = k.x*cos - x*sin;
+  k.y = k.y*cos - y*sin;
+  k.z = k.z*cos - z*sin;
+  k.w = k.w*cos - w*sin;
+}
+
+export function unit(v: Vec4): Vec4 {
   const { x, y, z, w} = v;
   const len = Math.sqrt(x*x+y*y+z*z+w*w);
   return { x: x/len, y: y/len, z: z/len, w: w/len };
 }
 
-export function orthogonalize(v: Vec4, k: Vec4): Vec4 {
-    const { x: vx, y: vy, z: vz, w: vw } = v;
-    const { x: kx, y: ky, z: kz, w: kw } = k;
+export function normalize(v: Vec4) {
+  const len = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
+  v.x /= len;
+  v.y /= len;
+  v.z /= len;
+  v.w /= len;
+}
+
+export function orthonorm(v: Vec4, ks: Vec4[]) {
+  let { x: vx, y: vy, z: vz, w: vw } = v;
+
+  for (const { x: kx, y: ky, z: kz, w: kw } of ks) {
     const vk = vx*kx+vy*ky+vz*kz+vw*kw;
-    return {
-        x: vx - kx*vk,
-        y: vy - ky*vk,
-        z: vz - kz*vk,
-        w: vw - kw*vk
-    };
+
+    vx -= kx*vk;
+    vy -= ky*vk;
+    vz -= kz*vk;
+    vw -= kw*vk;
+  }
+
+  const len = Math.sqrt(vx*vx+vy*vy+vz*vz+vw*vw);
+
+  v.x = vx / len;
+  v.y = vy / len;
+  v.z = vz / len;
+  v.w = vw / len;
 }
 
 export function angle_between(v: Vec4, k: Vec4): number {
-    return Math.acos(v.x*k.x + v.y*k.y + v.z*k.z + v.w*k.w);
+  return Math.acos(v.x*k.x + v.y*k.y + v.z*k.z + v.w*k.w);
 }
