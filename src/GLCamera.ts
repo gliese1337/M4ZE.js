@@ -146,12 +146,13 @@ export default class Camera {
       y: fwd.y * depth + rgt.y * x + up.y * y,
       z: fwd.z * depth + rgt.z * x + up.z * y,
       w: fwd.w * depth + rgt.w * x + up.z * y
-	};
-	
-	normalize(ray);
+    };
+    
+    normalize(ray);
 
-    return cast(player, ray, this.mapsize * 2, this.map);
+    return cast(player.pos, ray, this.mapsize * 2, this.map);
   }
+
   resize(w: number, h: number) {
     const { gl, canvas, fov, locs: { res, depth } } = this;
     canvas.width = w;
@@ -161,6 +162,7 @@ export default class Camera {
     gl.uniform1f(depth, w / (2 * Math.tan(fov / 2)));
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
+
   setCell(cell: Vec4, vals: number[], defer = false) {
     const { mapdata } = this;
     const vlen = vals.length;
@@ -170,16 +172,18 @@ export default class Camera {
     }
     if (!defer)  this.loadMap();
   }
+
   loadMap() {
     const gl = this.gl;
     gl.activeTexture(gl.TEXTURE0);
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8UI, this.planesize, this.planesize, 0, gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, this.mapdata);
   }
+
   render(player: Player) {
     const gl = this.gl;
     const { origin, rgt, up, fwd } = this.locs;
-    gl.uniform4f(origin, player.x, player.y, player.z, player.w);
+    gl.uniform4f(origin, player.pos.x, player.pos.y, player.pos.z, player.pos.w);
     gl.uniform4f(rgt, player.rgt.x, player.rgt.y, player.rgt.z, player.rgt.w);
     gl.uniform4f(up, player.up.x, player.up.y, player.up.z, player.up.w);
     gl.uniform4f(fwd, player.fwd.x, player.fwd.y, player.fwd.z, player.fwd.w);

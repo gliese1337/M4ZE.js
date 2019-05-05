@@ -98,6 +98,8 @@ export default class Controls {
     clipX: 0, clipY: 0
   };
 
+  public activated = false;
+
   constructor(private width: number, private height: number) {
     document.addEventListener('keydown', this.onKey.bind(this, true), false);
     document.addEventListener('keyup', this.onKey.bind(this, false), false);
@@ -105,17 +107,20 @@ export default class Controls {
     document.addEventListener('mousemove', this.onMouse.bind(this, 0), false);
     document.addEventListener('mouseup', this.onMouse.bind(this, -1), false);
   }
+
   resize(w: number, h: number) {
     this.states.mouseX + (this.width - w) / 2;
     this.states.mouseY + (this.height - h) / 2;
     this.width = w;
     this.height = h;
   }
+
   onMouse(val: -1|0|1, e: MouseEvent) {
-    const button = e.button;
+    const { button } = e;
     if (button !== 0 && button !== 2) {
       return;
     }
+
     const { width, height, states, keys } = this;
     if (val === 1) {
       if (button === 2) {
@@ -131,6 +136,7 @@ export default class Controls {
       states.clipY = 2 * (states.mouseY / height);
       states.mouse = true;
       document.body.style.cursor = "none";
+      this.activated = true;
     } else if (val === -1) {
       if (button === 2) {
         keys.rmb = false;
@@ -148,6 +154,7 @@ export default class Controls {
       states.clipY = 2 * (states.mouseY / height);
     }
   }
+
   onKey(val: boolean, e: KeyboardEvent) {
     const key = this.codes[e.keyCode];
     if (typeof key === 'undefined') {
@@ -155,9 +162,17 @@ export default class Controls {
     }
     e.preventDefault && e.preventDefault();
     e.stopPropagation && e.stopPropagation();
-    const states = this.states;
+
     const keys = this.keys;
+    if (keys[key] === val) return;
     keys[key] = val;
+
+    if (!this.activated && val) {
+      console.log("Activated by:", key);
+      this.activated = true;
+    }
+
+    const states = this.states;
     states.mark = keys.m;
     states.zoomin = !keys.pls && keys.min;
     states.zoomout = keys.pls && !keys.min;

@@ -3,7 +3,7 @@ export default class Overlay {
   private fpsw: number[] = [];
   public progress = 0;
 
-  constructor(private canvas: HTMLCanvasElement, private len: number) {
+  constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
   }
 
@@ -43,7 +43,7 @@ export default class Overlay {
     ctx.fillText(d + (d == Math.floor(d) ? ".0" : ""), x + 28, y + 24);
   }
   tick(seconds: number) {
-    const { canvas, ctx, fpsw, len, progress } = this;
+    const { canvas, ctx, fpsw, progress } = this;
     const { height, width } = canvas;
     if (fpsw.length > 20) {
       fpsw.shift();
@@ -75,7 +75,7 @@ export default class Overlay {
     ctx.translate(5, height - 16);
     
     ctx.fillText("Progress:", 0, 0);
-    ctx.fillText(Math.round(100 * progress / len) + "%", 50, 0);
+    ctx.fillText((10 * progress).toString(), 50, 0);
     ctx.restore();
   }
 }

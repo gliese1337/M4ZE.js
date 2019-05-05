@@ -66,12 +66,6 @@ export function vec_rot2(v: Vec4, k: Vec4, t: number) {
   k.w = k.w*cos - w*sin;
 }
 
-export function unit(v: Vec4): Vec4 {
-  const { x, y, z, w} = v;
-  const len = Math.sqrt(x*x+y*y+z*z+w*w);
-  return { x: x/len, y: y/len, z: z/len, w: w/len };
-}
-
 export function normalize(v: Vec4) {
   const len = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
   v.x /= len;

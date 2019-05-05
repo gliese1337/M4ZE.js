@@ -1,4 +1,4 @@
-import { Vec4, len2, vec_rot2, unit, orthonorm, vec_add, reject } from "./Vectors";
+import { Vec4, len2, vec_rot2, orthonorm, vec_add, reject } from "./Vectors";
 import { ControlStates } from "./Controls";
 import Maze from "./Maze";
 import cast from "./Raycast";
@@ -12,6 +12,8 @@ const basis = [
   { x: 0, y: 0, z: 0, w: 1 },
 ];
 
+const unit = { x: 0, y: 0, z: 0, w: 0 };
+
 const turnRate = Math.PI / 2.75;
 
 function rotArray(arr: Vec4[], count: number) {
@@ -21,25 +23,15 @@ function rotArray(arr: Vec4[], count: number) {
   return arr;
 }
 
-export default class Player implements Vec4 {
+export default class Player {
   public velocity: Vec4 = { x: 0, y: 0, z: 0, w: 0 };
-
-  public x: number;
-  public y: number;
-  public z: number;
-  public w: number;
 
   public fwd: Vec4;
   public rgt: Vec4;
   public up: Vec4;
   public ana: Vec4;
 
-  constructor({ x, y, z, w }: Vec4, ana: keyof Vec4) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.w = w;
-
+  constructor(public pos: Vec4, ana: keyof Vec4) {
     [
       this.rgt,
       this.up,
@@ -70,30 +62,31 @@ export default class Player implements Vec4 {
   }
 
   translate(seconds: number, map: Maze) {
-    let { velocity } = this;
+    const { pos, velocity: v } = this;
+    const mag = Math.sqrt(len2(v));
+    if (mag === 0) return false;
 
-    const inc = Math.sqrt(len2(velocity)) * seconds;
-    let { distance, norm } = cast(this, unit(velocity), inc + 0.05, map);
+    const inc = mag * seconds;
+    unit.x = v.x / mag;
+    unit.y = v.y / mag;
+    unit.z = v.z / mag;
+    unit.w = v.w / mag;
+
+    let { distance, norm } = cast(pos, unit, inc + 0.05, map);
     distance -= 0.001;
 
     if (distance < inc) {
       const scale = seconds * distance / inc;
 
       // Translate up to the point of impact
-      this.x += velocity.x * scale;
-      this.y += velocity.y * scale;
-      this.z += velocity.z * scale;
-      this.w += velocity.w * scale;
+      vec_add(pos, scale, v);
 
       // Translate along the surface
-      reject(velocity, norm);
+      reject(v, norm);
       seconds -= scale;
     }
 
-    this.x += velocity.x * seconds;
-    this.y += velocity.y * seconds;
-    this.z += velocity.z * seconds;
-    this.w += velocity.w * seconds;
+    vec_add(pos, seconds, v);
 
     return true;
   }
@@ -105,8 +98,14 @@ export default class Player implements Vec4 {
     const { velocity: v } = this;
     
     // Gravity
-    v.w -= 0.05 * seconds;
+    //v.w -= 0.05 * seconds;
 
+    if (controls.fwd) {
+      vec_add(v, 0.75 * seconds, this.fwd);
+    } else if (controls.bak) {
+	    vec_add(v, -0.75 * seconds, this.fwd);
+    }
+  
     // Air resistance
     const speed2 = len2(v);
     if (speed2 > .0001) {
@@ -117,12 +116,11 @@ export default class Player implements Vec4 {
       v.y *= scale;
       v.z *= scale;
       v.w *= scale;
-    }
-
-    if (controls.fwd) {
-      vec_add(v, 0.75 * seconds, this.fwd);
-    } else if (controls.bak) {
-	    vec_add(v, -0.75 * seconds, this.fwd);
+    } else {
+      v.x = 0;
+      v.y = 0;
+      v.z = 0;
+      v.w = 0;
     }
   }
 

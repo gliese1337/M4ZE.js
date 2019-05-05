@@ -1,35 +1,21 @@
 import Camera from "./GLCamera";
 import Overlay from "./Overlay";
 import Player from "./Player";
-import Controls from "./Controls";
+import Controls, { ControlStates } from "./Controls";
 import GameLoop from "./GameLoop";
 import Maze from "./Maze.js";
 import { vec_rot, normalize, orthonorm, angle_between, Vec4 } from "./Vectors";
 
-const SIZE = 4;
+const SIZE = 3;
 
-interface Route {
-  start: Vec4;
-  end: Vec4;
-  path: Vec4[];
-}
-
-function get_route(map: Maze): Route {
-  const path = map.getLongestPath();
-  const start = path.shift() as Vec4;
-  const end = path.pop() as Vec4;
-
-  return { start, path, end };
-}
-
-function mark_route(camera: Camera, map: Maze, route: Route, skip: number) {
-  const {start, path, end} = route;
+function mark_route(camera: Camera, map: Maze, skip: number) {
+  const { start, path, end } = map.route;
   const mod = skip + 1;
 
   path.forEach((cell,i) => {
-    const blue = (i+1) % mod === 0 ? 1 : 4;
+    const blue = (i+1) % mod === 0 ? 1 : 0;
     map.set(cell, blue);
-    camera.setCell(cell, [blue, 191], true);
+    camera.setCell(cell, [blue, 255], true);
   });
 
   map.set(start, 0);
@@ -38,12 +24,13 @@ function mark_route(camera: Camera, map: Maze, route: Route, skip: number) {
   camera.setCell(end, [2, 255], false);
 }
 
-function reverse(camera: Camera, map: Maze, route: any, skip: number, overlay: Overlay) {
+function reverse(camera: Camera, map: Maze, skip: number, overlay: Overlay) {
+  const { route } = map;
   [route.end, route.start] = [route.start, route.end];
+  [route.fromEnd, route.fromStart] = [route.fromStart, route.fromEnd];
   route.path.reverse();
-
-  mark_route(camera, map, route, skip);
-  overlay.progress = 0;
+  mark_route(camera, map, skip);
+  overlay.progress = route.fromEnd[map.getId(route.start)];
 }
 
 function getStartAnaAxis({ x, y, z, w }: Vec4, map: Maze) {
@@ -70,9 +57,37 @@ function getDirectionToPath(pos: Vec4, cell: Vec4) {
   return d;
 }
 
+function update_zoom(camera: Camera, states: ControlStates, seconds: number) {
+  if (states.zoomin && camera.fov < Math.PI) {
+    camera.fov = Math.min(camera.fov + Math.PI*seconds/2, Math.PI);
+    return true;
+  }
+  if (states.zoomout && camera.fov > .01) {
+    camera.fov = Math.max(camera.fov - Math.PI*seconds/2, 0);
+    return true;
+  }
+  return false;
+}
+
+let rx = 0, ry = 0;
+function update_overlay(camera: Camera, overlay: Overlay, player: Player, states: ControlStates, seconds: number) {
+  if (states.mouse) {
+    ({mouseX: rx, mouseY: ry} = states);
+  } else {
+    if (rx !== 0) { rx /= 1.5;}
+    if (Math.abs(rx) < .01) { rx = 0; }
+    if (ry !== 0) { ry /= 1.5;}
+    if (Math.abs(ry) < .01) { ry = 0; }
+  }
+
+  const { distance } = camera.getDepth(player, rx, ry);
+  overlay.tick(seconds);
+  overlay.reticle(rx, ry, distance);
+}
+
 export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   const map = new Maze(SIZE);
-  const route = get_route(map);
+  const route = map.route;
 
   let rounds = 0;
 
@@ -87,9 +102,9 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
 
   const controls = new Controls(d.width, d.height);
   const camera = new Camera(d, map, Math.PI / 1.5);
-  const overlay = new Overlay(o, route.path.length+1);
+  const overlay = new Overlay(o);
 
-  mark_route(camera, map, route, 0);
+  mark_route(camera, map, 0);
 
   window.addEventListener('resize', () => {
     const w = window.innerWidth;
@@ -100,20 +115,6 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   },false);
 
   const states = controls.states;
-
-  const update_zoom = (seconds: number) => {
-    if (states.zoomin && camera.fov < Math.PI) {
-      camera.fov = Math.min(camera.fov + Math.PI*seconds/2, Math.PI);
-      return true;
-    }
-    if (states.zoomout && camera.fov > .01) {
-      camera.fov = Math.max(camera.fov - Math.PI*seconds/2, 0);
-      return true;
-    }
-    return false;
-  };
-  
-  let player_control = false;
 
   const update_cell = ({ x: cx, y: cy, z: cz, w: cw }: Vec4) => {
     const { size } = map;
@@ -130,26 +131,33 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       curr_cell.w = cw;
       
       const val = map.get(curr_cell);
-
       switch (val) {
-        case 2:
+        case 2: {
           if (rounds < route.path.length) {
-            reverse(camera, map, route, ++rounds, overlay);
-            player_control = false;
+            reverse(camera, map, ++rounds, overlay);
+            controls.activated = false;
           } else {
             throw new Error("Resetting is not yet implemented");
           }
           return true;
-        case 1: case 4: {
+        }
+        case 1: case 3: {
           const nv = states.mark?3:0;
           map.set(curr_cell, nv);
           camera.setCell(curr_cell, [nv]);
-          overlay.progress++;
-          return true;
-        }
-        case 3: if (!states.mark) {
-          map.set(curr_cell, 0);
-          camera.setCell(curr_cell, [0]);
+
+          // If we skip over a cell by jumping a corner,
+          // make sure it gets uncolored as well.
+          let idx = map.route.path.findIndex(
+            ({ x, y, z, w }) => x === cx && y === cy && z === cz && w === cw
+          ) - 1;
+          for (; idx > -1; idx--) {
+            const cell = map.route.path[idx];
+            if (map.get(cell) === 0) break;
+            map.set(curr_cell, 0);
+            camera.setCell(curr_cell, [0]);
+          }
+
           return true;
         }
       }
@@ -161,70 +169,57 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
         return true;
       }
     }
+
     return false;
-  };
-
-  let rx = 0, ry = 0;
-  const update_overlay = (seconds: number) => {
-    if (states.mouse) {
-      ({mouseX: rx, mouseY: ry} = states);
-    } else {
-      if (rx !== 0) { rx /= 1.5;}
-      if (Math.abs(rx) < .01) { rx = 0; }
-      if (ry !== 0) { ry /= 1.5;}
-      if (Math.abs(ry) < .01) { ry = 0; }
-    }
-
-    const { distance } = camera.getDepth(player, rx, ry);
-    overlay.tick(seconds);
-    overlay.reticle(rx, ry, distance);
-  };
+  }
 
   const loop = new GameLoop((seconds: number) => {
-    if (player_control) {
+    overlay.progress = route.fromEnd[map.getId(curr_cell)];
+    if (controls.activated) {
       let change = player.update(states, seconds, map);
-      change = update_zoom(seconds) || change;
-      change = update_cell(player) || change;
+      change = update_zoom(camera, states, seconds) || change;
+      change = update_cell(player.pos) || change;
 
       if (change) { camera.render(player); }
-      update_overlay(seconds);
+
+      overlay.progress = route.fromEnd[map.getId(curr_cell)];
+      update_overlay(camera, overlay, player, states, seconds);
     } else {
       let change = false;
-      const k = getDirectionToPath(player, route.path[0]);
-      const angle = Math.abs(angle_between(k, player.fwd));
+      const { pos, fwd } = player;
+      const k = getDirectionToPath(pos, route.path[0]);
+      const angle = Math.abs(angle_between(k, fwd));
       if (angle > 1e-5) {
-        orthonorm(k, [player.fwd]);
+        orthonorm(k, [fwd]);
         const t =  angle > 0.0125 ? seconds * 0.5 : angle;
-        vec_rot(player.fwd, k, t);
-        player.rotate('x', 'y', t/2, false);
+        vec_rot(fwd, k, t);
+        player.rotate('x', 'y', t / 1.5, false);
         player.renormalize();
         change = true;
       }
 
-      const update_pos = (d: keyof Vec4) => {
-        const dd = 0.5 - (player[d] - Math.floor(player[d]));
+      for (const d of [ "x", "y", "z", "w" ] as (keyof Vec4)[]) {
+        const dd = 0.5 - (pos[d] - Math.floor(pos[d]));
         if (Math.abs(dd) > 0.01) {
-          player[d] += seconds * dd;
+          pos[d] += seconds * dd;
         }
-      };
-
-      update_pos('x');
-      update_pos('y');
-      update_pos('z');
-      update_pos('w');
+      }
 
       if (!change) {
-		console.log("Transferring control to the player");
-		player.velocity = { x: 0, y: 0, z: 0, w: 0 };
-        player_control = true;
+        console.log("Transferring control to the player");
+        player.velocity = { x: 0, y: 0, z: 0, w: 0 };
+        controls.activated = true;
       }
 
       camera.render(player);
-      update_overlay(seconds);
+      update_overlay(camera, overlay, player, states, seconds);
     }
   });
 
   camera.onready(() => {
+    console.log("Current Cell:", curr_cell);
+    console.log("Player pos:", player.pos);
+    console.log("Cell value:", map.get(curr_cell));
     camera.render(player);
     loop.start();
   });
