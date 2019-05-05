@@ -168,7 +168,6 @@ export default class Controls {
     keys[key] = val;
 
     if (!this.activated && val) {
-      console.log("Activated by:", key);
       this.activated = true;
     }
 

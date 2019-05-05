@@ -201,14 +201,11 @@ function distances(grid: { val: number, id: number }[][][][], size: number, star
     return children;
   }
 
-  let filled = 0;
   do {
     const nlevel = [];
 
     for (const cell of level) {
       dists[cell.data.id] = dist;
-      console.log(cell.pos, cell.data.id);
-      filled++;
       nlevel.push(...nexts(cell.pos));
     }
 
@@ -216,7 +213,6 @@ function distances(grid: { val: number, id: number }[][][][], size: number, star
     level = nlevel;
   } while (level.length);
 
-  console.log(nodes, filled);
   return dists;
 }
 

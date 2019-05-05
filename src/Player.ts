@@ -88,12 +88,18 @@ export default class Player {
 
     vec_add(pos, seconds, v);
 
+    const { size } = map;
+    pos.x -= size * Math.floor(pos.x / size);
+    pos.y -= size * Math.floor(pos.y / size);
+    pos.z -= size * Math.floor(pos.z / size);
+    pos.w -= size * Math.floor(pos.w / size);
+
     return true;
   }
  
   update_speed(controls: ControlStates, seconds: number) {
-    const C = controls.mouse ? 4 : // drag coefficient
-      (controls.fwd || controls.bak) ? 2 : 15;
+    const C = controls.mouse ? 1.5 : // drag coefficient
+      (controls.fwd || controls.bak) ? 1 : 2;
 
     const { velocity: v } = this;
     
@@ -105,12 +111,10 @@ export default class Player {
     } else if (controls.bak) {
 	    vec_add(v, -0.75 * seconds, this.fwd);
     }
-  
-    // Air resistance
-    const speed2 = len2(v);
-    if (speed2 > .0001) {
-      const speed = Math.sqrt(speed2);
-      const scale = Math.max(speed - speed2 * C * seconds, 0) / speed;
+
+    const speed = Math.sqrt(len2(v));
+    if (speed > .001) {
+      const scale = Math.max(speed - speed * C * seconds, 0) / speed;
 
       v.x *= scale;
       v.y *= scale;

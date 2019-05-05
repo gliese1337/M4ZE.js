@@ -117,11 +117,10 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   const states = controls.states;
 
   const update_cell = ({ x: cx, y: cy, z: cz, w: cw }: Vec4) => {
-    const { size } = map;
-    cx = Math.floor(cx - size * Math.floor(cx / size));
-    cy = Math.floor(cy - size * Math.floor(cy / size));
-    cz = Math.floor(cz - size * Math.floor(cz / size));
-    cw = Math.floor(cw - size * Math.floor(cw / size));
+    cx = Math.floor(cx);
+    cy = Math.floor(cy);
+    cz = Math.floor(cz);
+    cw = Math.floor(cw);
 
     if (cx !== curr_cell.x || cy !== curr_cell.y || cz !== curr_cell.z || cw !== curr_cell.w) {
       //Enter cell
@@ -183,7 +182,6 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       if (change) { camera.render(player); }
 
       overlay.progress = route.fromEnd[map.getId(curr_cell)];
-      update_overlay(camera, overlay, player, states, seconds);
     } else {
       let change = false;
       const { pos, fwd } = player;
@@ -212,8 +210,13 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       }
 
       camera.render(player);
-      update_overlay(camera, overlay, player, states, seconds);
     }
+
+    update_overlay(camera, overlay, player, states, seconds);
+
+    //console.log("Current Cell:", curr_cell);
+    //console.log("Player pos:", player.pos);
+    //console.log("Cell value:", map.get(curr_cell));
   });
 
   camera.onready(() => {
