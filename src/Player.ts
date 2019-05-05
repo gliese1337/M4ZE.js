@@ -114,7 +114,7 @@ export default class Player {
 
     const speed = Math.sqrt(len2(v));
     if (speed > .001) {
-      const scale = Math.max(speed - speed * C * seconds, 0) / speed;
+      const scale = Math.max(speed - Math.pow(speed, 2 - 1/(speed + 1)) * C * seconds, 0) / speed;
 
       v.x *= scale;
       v.y *= scale;
