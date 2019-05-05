@@ -12,7 +12,7 @@ export default class GameLoop {
     this._stop = false;
     const frame = (time: number) => {
       if (this._stop) return;
-      const seconds = (time - this.lastTime) / 1000;
+      const seconds = Math.min(1, (time - this.lastTime) / 1000);
       this.lastTime = time;
       this.body(seconds);
       requestAnimationFrame(frame);
