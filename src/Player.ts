@@ -73,7 +73,7 @@ export default class Player {
     unit.w = v.w / mag;
 
     let { distance, norm } = cast(pos, unit, inc + 0.05, map);
-    distance -= 0.001;
+    distance -= 0.01;
 
     if (distance < inc) {
       const scale = seconds * distance / inc;

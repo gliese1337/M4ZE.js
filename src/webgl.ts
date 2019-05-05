@@ -129,8 +129,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       curr_cell.z = cz;
       curr_cell.w = cw;
       
-      const val = map.get(curr_cell);
-      switch (val) {
+      switch (map.get(curr_cell)) {
         case 2: {
           if (rounds < route.path.length) {
             reverse(camera, map, ++rounds, overlay);
