@@ -6,6 +6,11 @@ import GameLoop from "./GameLoop";
 import Maze from "./Maze.js";
 import { vec_rot, normalize, orthonorm, angle_between, Vec4 } from "./Vectors";
 
+import seedrandom = require("seedrandom");
+const seed = Math.random().toString();
+seedrandom(seed, { global: true });
+console.log(seed);
+
 const SIZE = 3;
 
 function mark_route(camera: Camera, map: Maze, skip: number) {
