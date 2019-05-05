@@ -16,9 +16,10 @@ const SIZE = 3;
 function mark_route(camera: Camera, map: Maze, skip: number) {
   const { start, path, end } = map.route;
   const mod = skip + 1;
+  const offset = Math.floor((path.length % mod) / 2) + 1;
 
   path.forEach((cell,i) => {
-    const blue = (i+1) % mod === 0 ? 1 : 0;
+    const blue = (i + offset) % mod === 0 ? 1 : 0;
     map.set(cell, blue);
     camera.setCell(cell, [blue, 255], true);
   });
