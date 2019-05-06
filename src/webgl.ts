@@ -11,7 +11,7 @@ const seed = Math.random().toString();
 seedrandom(seed, { global: true });
 console.log(seed);
 
-const SIZE = 3;
+const SIZE = 5;
 
 function mark_route(camera: Camera, map: Maze, skip: number) {
   const { start, path, end } = map.route;

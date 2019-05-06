@@ -1,6 +1,7 @@
 import { Vec4 } from "./Vectors";
 
-type Direction = "F" | "B" | "L" | "R" | "U" | "D" | "A" | "K";
+const F = 0, B = 1, L = 2, R = 3, U = 4, D = 5, A = 6, K = 7;
+type Direction = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 interface Cell extends Vec4 {
   prev: Direction;
@@ -11,26 +12,27 @@ function rand(n: number) {
   return Math.floor(Math.random() * n);
 }
 
-function pick(list: Direction[]) {
-  return list[rand(list.length)];
+function isSafe(grid: { val: number, id: number }[][][][], size: number, x: number, y: number, z: number, w: number) {
+  const wg = grid[w];
+  const zg = wg[z];
+  const yg = zg[y];
+
+   // make sure 8 of 9 cells are solid; 1024 = 128 * 8
+  return 1024 === (
+    yg[x].val +
+    yg[(x+1)%size].val +
+    yg[(x+size-1)%size].val +
+    zg[(y+1)%size][x].val +
+    zg[(y+size-1)%size][x].val +
+    wg[(z+1)%size][y][x].val +
+    wg[(z+size-1)%size][y][x].val +
+    grid[(w+1)%size][z][y][x].val +
+    grid[(w+size-1)%size][z][y][x].val
+  );
 }
-  
+
 function generate(start: Vec4, size: number): [ { val: number, id: number }[][][][], number ] {
   const grid: { val: number, id: number }[][][][] = [];
-
-  function isSafe(x: number, y: number, z: number, w: number) {
-    return 8 === (
-      (grid[w][z][y][x].val === 128 ? 1 : 0) +
-      (grid[w][z][y][(x+1)%size].val === 128 ? 1 : 0) +
-      (grid[w][z][y][(x+size-1)%size].val === 128 ? 1 : 0) +
-      (grid[w][z][(y+1)%size][x].val === 128 ? 1 : 0) +
-      (grid[w][z][(y+size-1)%size][x].val === 128 ? 1 : 0) +
-      (grid[w][(z+1)%size][y][x].val === 128 ? 1 : 0) +
-      (grid[w][(z+size-1)%size][y][x].val === 128 ? 1 : 0) +
-      (grid[(w+1)%size][z][y][x].val === 128 ? 1 : 0) +
-      (grid[(w+size-1)%size][z][y][x].val === 128 ? 1 : 0)
-    );        
-  }
 
   console.log("Generating Grid");
   for (let w = 0; w < size; w++) {
@@ -53,48 +55,51 @@ function generate(start: Vec4, size: number): [ { val: number, id: number }[][][
   grid[nw][nz][ny][nx] = { val: 0, id: 0 };
 
   let nextId = 1;
-
+  const safe: Direction[] = [];
   while (cells.length > 0) {
     //Grab a random empty cell
-    const index = Math.random() < .5 ? rand(cells.length) : cells.length - 1;
+    const highest = cells.length - 1;
+    const index = Math.random() < .5 ? rand(cells.length) : highest;
     ({ x: nx, y: ny, z: nz, w: nw } = cells[index]);
     
     //Check if there are any directions in which we can carve out a space
     //without running into another empty cell, which would create a cycle
-    const safe: Direction[] = [];
 
-    if (isSafe((nx+1)%size, ny, nz, nw)) { safe.push("R"); }
-    if (isSafe((nx+size-1)%size, ny, nz, nw)) { safe.push("L"); }
+    let slen = 0;
+    if (isSafe(grid, size, (nx+1)%size, ny, nz, nw)) { safe[slen++] = R; }
+    if (isSafe(grid, size, (nx+size-1)%size, ny, nz, nw)) { safe[slen++] = L; }
     
-    if (isSafe(nx, (ny+1)%size, nz, nw)) { safe.push("U"); }
-    if (isSafe(nx, (ny+size-1)%size, nz, nw)) { safe.push("D"); }
+    if (isSafe(grid, size, nx, (ny+1)%size, nz, nw)) { safe[slen++] = U; }
+    if (isSafe(grid, size, nx, (ny+size-1)%size, nz, nw)) { safe[slen++] = D; }
     
-    if (isSafe(nx, ny, (nz+1)%size, nw)) { safe.push("F"); }
-    if (isSafe(nx, ny, (nz+size-1)%size, nw)) { safe.push("B"); }
+    if (isSafe(grid, size, nx, ny, (nz+1)%size, nw)) { safe[slen++] = F; }
+    if (isSafe(grid, size, nx, ny, (nz+size-1)%size, nw)) { safe[slen++] = B; }
     
-    if (isSafe(nx, ny, nz, (nw+1)%size)) { safe.push("A"); }
-    if (isSafe(nx, ny, nz, (nw+size-1)%size)) { safe.push("K"); }
+    if (isSafe(grid, size, nx, ny, nz, (nw+1)%size)) { safe[slen++] = A; }
+    if (isSafe(grid, size, nx, ny, nz, (nw+size-1)%size)) { safe[slen++] = K; }
     
-    if (safe.length === 0) {
-      cells.splice(index, 1);
+    if (slen === 0) {
+      if (index < highest)
+        cells[index] = cells[highest];
+      cells.length--;
     } else {
       //Pick a random direction & carve it out
-      switch (pick(safe)) {
-      case 'R': nx = (nx + 1) % size;
+      switch (safe[rand(slen)]) {
+      case R: nx = (nx + 1) % size;
         break;
-      case 'L': nx = (nx - 1 + size) % size;
+      case L: nx = (nx - 1 + size) % size;
         break;
-      case 'U': ny = (ny + 1) % size;
+      case U: ny = (ny + 1) % size;
         break;
-      case 'D': ny = (ny - 1 + size) % size;
+      case D: ny = (ny - 1 + size) % size;
         break;
-      case 'F': nz = (nz + 1) % size;
+      case F: nz = (nz + 1) % size;
         break;
-      case 'B': nz = (nz - 1 + size) % size;
+      case B: nz = (nz - 1 + size) % size;
         break;
-      case 'A': nw = (nw + 1) % size;
+      case A: nw = (nw + 1) % size;
         break;
-      case 'K': nw = (nw - 1 + size) % size;
+      case K: nw = (nw - 1 + size) % size;
         break;
       }
 
@@ -108,58 +113,60 @@ function generate(start: Vec4, size: number): [ { val: number, id: number }[][][
 }
 
 function find_farthest(grid: { val: number, id: number }[][][][], start: Cell, size: number) {
-  let cells, ncells = [start];
+  let cells: Cell[] = [];
+  let ncells = [start];
   do {
-    [cells, ncells] = [ncells, []];
+    cells.length = 0;
+    [cells, ncells] = [ncells, cells];
     for (const cell of cells) {
       let {x, y, z, w} = cell;
 
-      if (cell.prev !== "R") {
+      if (cell.prev !== R) {
         const n = (x+1)%size;
         if (grid[w][z][y][n].val !== 128)
-          ncells.push({x:n,y,z,w,prev:"L",back:cell});
+          ncells.push({x:n,y,z,w,prev:L,back:cell});
       }
 
-      if (cell.prev !== "L") {
+      if (cell.prev !== L) {
         const n = (x+size-1)%size;
         if (grid[w][z][y][n].val !== 128)
-          ncells.push({x:n,y,z,w,prev:"R",back:cell});
+          ncells.push({x:n,y,z,w,prev:R,back:cell});
       }
 
-      if (cell.prev !== "U") {
+      if (cell.prev !== U) {
         const n = (y+1)%size;
         if (grid[w][z][n][x].val !== 128)
-          ncells.push({x,y:n,z,w,prev:"D",back:cell});
+          ncells.push({x,y:n,z,w,prev:D,back:cell});
       }
       
-      if (cell.prev !== "D") {
+      if (cell.prev !== D) {
         const n = (y+size-1)%size;
         if (grid[w][z][n][x].val !== 128)
-          ncells.push({x,y:n,z,w,prev:"U",back:cell});
+          ncells.push({x,y:n,z,w,prev:U,back:cell});
       }
 
-      if (cell.prev !== "F") {
+      if (cell.prev !== F) {
         const n = (z+1)%size;
         if (grid[w][n][y][x].val !== 128)
-          ncells.push({x,y,z:n,w,prev:"B",back:cell});
+          ncells.push({x,y,z:n,w,prev:B,back:cell});
       }
       
-      if (cell.prev !== "B") {
+      if (cell.prev !== B) {
         const n = (z+size-1)%size;
         if (grid[w][n][y][x].val !== 128)
-          ncells.push({x,y,z:n,w,prev:"F",back:cell});
+          ncells.push({x,y,z:n,w,prev:F,back:cell});
       }
 
-      if (cell.prev !== "A") {
+      if (cell.prev !== A) {
         const n = (w+1)%size;
         if (grid[n][z][y][x].val !== 128)
-          ncells.push({x,y,z,w:n,prev:"K",back:cell});
+          ncells.push({x,y,z,w:n,prev:K,back:cell});
       }
       
-      if (cell.prev !== "K") {
+      if (cell.prev !== K) {
         const n = (w+size-1)%size;
         if (grid[n][z][y][x].val !== 128)
-          ncells.push({x,y,z,w:n,prev:"A",back:cell});
+          ncells.push({x,y,z,w:n,prev:A,back:cell});
       }
     }
   } while(ncells.length > 0);

@@ -75,7 +75,7 @@ export default class Overlay {
     ctx.translate(5, height - 16);
     
     ctx.fillText("Progress:", 0, 0);
-    ctx.fillText((10 * progress).toString(), 50, 0);
+    ctx.fillText(progress.toString(), 50, 0);
     ctx.restore();
   }
 }
