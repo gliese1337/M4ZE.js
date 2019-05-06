@@ -132,42 +132,64 @@ export default class Player {
     const accelerating = controls.fwd || controls.bak || controls.mouse;
     const angle = seconds * turnRate;
     let moved = false;
-	
+
     if (controls.pup) {
-        this.rotate(controls.vp, controls.kp, angle, accelerating);
-        moved = true;
-    }
-    else if (controls.pdn) {
-      this.rotate(controls.kp, controls.vp, angle, accelerating);
+      this.rotate('z', 'y', angle, accelerating);
+      moved = true;
+    } else if (controls.pdn) {
+      this.rotate('y', 'z', angle, accelerating);
       moved = true;
     }
     
     if (controls.yrt) {
-      this.rotate(controls.vy, controls.ky, angle, accelerating);
+      this.rotate('z', 'x', angle, accelerating);
       moved = true;
-    }
-    else if (controls.ylt) {
-      this.rotate(controls.ky, controls.vy, angle, accelerating);
+    } else if (controls.ylt) {
+      this.rotate('x', 'z', angle, accelerating);
       moved = true;
     }
     
     if (controls.rrt) {
-      this.rotate(controls.vr, controls.kr, angle, accelerating);
+      this.rotate('x', 'y', angle, accelerating);
+      moved = true;
+    } else if (controls.rlt) {
+      this.rotate('y', 'x', angle, accelerating);
       moved = true;
     }
-    else if (controls.rlt) {
-      this.rotate(controls.kr, controls.vr, angle, accelerating);
+
+    if (controls.wup) {
+      this.rotate('z', 'w', angle, accelerating);
+      moved = true;
+    } else if (controls.wdn) {
+      this.rotate('w', 'z', angle, accelerating);
       moved = true;
     }
-    
+
+    if (controls.wyr) {
+      this.rotate('w', 'y', angle, accelerating);
+      moved = true;
+    } else if (controls.wyl) {
+      this.rotate('y', 'w', angle, accelerating);
+      moved = true;
+    }
+
+    if (controls.wrr) {
+      this.rotate('w', 'x', angle, accelerating);
+      moved = true;
+    } else if (controls.wrl) {
+      this.rotate('x', 'w', angle, accelerating);
+      moved = true;
+    }
+
     if (controls.mouse) {
       const { clipX: x, clipY: y } = controls;
-      moved = true;
       if (x !== 0) {
-        this.rotate(controls.vy, controls.ky, x * angle, true);
+        this.rotate('z', 'x', x * angle, true);
+        moved = true;
       }
       if (y !== 0) {
-        this.rotate(controls.kp, controls.vp, y * angle, true);
+        this.rotate('y', 'z', y * angle, true);
+        moved = true;
       }
     }
     
