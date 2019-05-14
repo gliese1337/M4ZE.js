@@ -180,7 +180,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   const loop = new GameLoop((seconds: number) => {
     overlay.progress = route.fromEnd[map.getId(curr_cell)];
     if (controls.activated) {
-      let change = player.update(states, seconds, map);
+      let change = player.update(states, camera, seconds, map);
       change = update_zoom(camera, states, seconds) || change;
       change = update_cell(player.pos) || change;
 

@@ -325,24 +325,47 @@ vec4 raytrace(float range, inout vec4 o, inout vec4 v, inout float light_dist, o
 
 /* Flashlight Algorithm */
 const float flashlight = 2.5;
-float get_light(float x, float y, float dist, float illumination) {
-  float t = atan(y, x);
+float get_light(float t, float dist, float illumination) {
   float g = exp(-t * t / 0.25);
   float dm = flashlight * exp2(-dist); // Dim based on distance
   return min(2.0, dm * g + illumination);
+}
+
+vec4 rot(vec4 v, vec4 x, vec4 y, float theta) {
+  float vx = dot(v, x);
+  float vy = dot(v, y);
+  float ct1 = cos(theta) - 1.0;
+  float st = sin(theta);
+  return v + x * (vx * ct1 - vy * st) + y * (vy * ct1 + vx * st);
+}
+
+vec2 getLngLat(vec2 coords) {
+  coords = 2.0 * coords / u_resolution - 1.0;;
+  float z2 = 1.0 - dot(coords, coords) / 2.0;
+  float z = sqrt(z2);
+  float lng = 2.0 * atan(sqrt(2.0) * coords.x * z, 2.0 * z2 - 1.0);
+  float lat = asin(sqrt(2.0) * coords.y * z);
+  return vec2(lng, lat);
+}
+
+vec4 getRay(vec2 coords) {
+  //return u_fwd * u_depth + u_rgt * coords.x + u_up * coords.y;
+  return rot(rot(u_fwd, u_fwd, u_up, coords.y), u_fwd, u_rgt, coords.x);
 }
 
 const float range = 10.0;
 
 void main() {
   vec4 o = mod(u_origin, float(SIZE));
-  if ((get_cell(ivec4(o)).x & 128u) == 128u) {
-    outColor = vec4(vec3(0), 1.0);
-    return;
-  }
 
-  vec2 coords = gl_FragCoord.xy - (u_resolution / 2.0);
-  vec4 ray = u_fwd * u_depth + u_rgt * coords.x + u_up * coords.y;
+  outColor = vec4(vec3(0), 1.0);
+  if ((get_cell(ivec4(o)).x & 128u) == 128u) return;
+
+  vec2 lnglat = getLngLat(gl_FragCoord.xy);
+  if (lnglat.x > 3.14159 || lnglat.x < -3.14159) return;
+
+  vec4 pixel_ray = getRay(lnglat);
+  vec4 ray = pixel_ray;
 
   int dim;
   float dist;
@@ -369,6 +392,8 @@ void main() {
     tex = mix(tex, tint, mixfrac); 
   }
 
-  float light = get_light(u_depth, length(coords), dist, light_dist);
+  //float t = atan(length(coords), u_depth);
+  float t = acos(dot(pixel_ray, u_fwd));
+  float light = get_light(t, dist, light_dist);
   outColor = vec4(min(tex * light, 1.0), 1.0);
 }
