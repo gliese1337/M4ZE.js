@@ -339,18 +339,8 @@ vec4 rot(vec4 v, vec4 x, vec4 y, float theta) {
   return v + x * (vx * ct1 - vy * st) + y * (vy * ct1 + vx * st);
 }
 
-vec2 getLngLat(vec2 coords) {
-  coords = 2.0 * coords / u_resolution - 1.0;;
-  float z2 = 1.0 - dot(coords, coords) / 2.0;
-  float z = sqrt(z2);
-  float lng = 2.0 * atan(sqrt(2.0) * coords.x * z, 2.0 * z2 - 1.0);
-  float lat = asin(sqrt(2.0) * coords.y * z);
-  return vec2(lng, lat);
-}
-
-vec4 getRay(vec2 coords) {
-  //return u_fwd * u_depth + u_rgt * coords.x + u_up * coords.y;
-  return rot(rot(u_fwd, u_fwd, u_up, coords.y), u_fwd, u_rgt, coords.x);
+float sigmoid(float x, float slope, float shift) {
+  return 0.5 + 0.5 * tanh(slope * (x - 0.5) - shift);
 }
 
 const float range = 10.0;
@@ -361,11 +351,18 @@ void main() {
   outColor = vec4(vec3(0), 1.0);
   if ((get_cell(ivec4(o)).x & 128u) == 128u) return;
 
-  vec2 lnglat = getLngLat(gl_FragCoord.xy);
-  if (lnglat.x > 3.14159 || lnglat.x < -3.14159) return;
+  vec2 coords = 2.0 * gl_FragCoord.xy / u_resolution - 1.0;
+  float mag = length(coords);
+  if (mag > 1.0) return;
 
-  vec4 pixel_ray = getRay(lnglat);
-  vec4 ray = pixel_ray;
+  vec4 pixel_ray = u_depth * u_fwd + coords.x * u_resolution.x * u_rgt + coords.y * u_resolution.y * u_up;
+
+  float lat = mag * 3.14159;
+  float lng = atan(coords.y, coords.x);
+  vec4 angle_ray = rot(rot(u_fwd, u_rgt, u_fwd, -lat), u_up, u_rgt, -lng);
+
+  vec4 ray = mix(pixel_ray, angle_ray, sigmoid(mag, 20.0, 3.0));
+  float theta = acos(dot(ray, u_fwd) / length(ray));
 
   int dim;
   float dist;
@@ -392,8 +389,6 @@ void main() {
     tex = mix(tex, tint, mixfrac); 
   }
 
-  //float t = atan(length(coords), u_depth);
-  float t = acos(dot(pixel_ray, u_fwd));
-  float light = get_light(t, dist, light_dist);
+  float light = get_light(theta, dist, light_dist);
   outColor = vec4(min(tex * light, 1.0), 1.0);
 }

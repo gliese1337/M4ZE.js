@@ -2,7 +2,6 @@ import { Vec4, len2, vec_rot2, orthonorm, vec_add, reject } from "./Vectors";
 import { ControlStates } from "./Controls";
 import Maze from "./Maze";
 import cast from "./Raycast";
-import Camera from "./GLCamera";
 
 const planes = { x: 'rgt', y: 'up', z: 'fwd', w: 'ana' };
 const planeIndices = { x: 0, y: 1, z: 2, w: 3 };
@@ -129,7 +128,7 @@ export default class Player {
     }
   }
 
-  update(controls: ControlStates, camera: Camera, seconds: number, map: Maze) {
+  update(controls: ControlStates, seconds: number, map: Maze) {
     const accelerating = controls.fwd || controls.bak || controls.mouse;
     const angle = seconds * turnRate;
     let moved = false;
@@ -182,16 +181,16 @@ export default class Player {
       moved = true;
     }
 
-    if (controls.mouse) {
+    mouse: if (controls.mouse) {
       const { clipX: x, clipY: y } = controls;
-      const { lat, lng } = camera.latLng(x, y);
-      console.log(lat, lng);
-      if (lng !== 0) {
-        this.rotate('z', 'x', lng * seconds, true);
+      if (x * x + y * y > 1) break mouse;
+      console.log("x,y", x, y);
+      if (x !== 0) {
+        this.rotate('z', 'x', x * Math.PI * seconds, true);
         moved = true;
       }
-      if (lat !== 0) {
-        this.rotate('y', 'z', lat * seconds, true);
+      if (y !== 0) {
+        this.rotate('y', 'z', y * Math.PI * seconds, true);
         moved = true;
       }
     }

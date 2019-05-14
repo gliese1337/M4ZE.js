@@ -138,17 +138,6 @@ export default class Camera {
   get width() { return this.canvas.width; }
   get height() { return this.canvas.height; }
 
-  latLng(x: number, y: number) {
-    console.log("x,y", x, y);
-    const z2 = 1 - (x*x + y*y) / 2;
-    const z = Math.sqrt(z2);
-    const lng = 2 * Math.atan2(Math.sqrt(2) * x * z, 2 * z2 - 1);
-    if (lng > Math.PI || lng < -Math.PI) return { lng: 0, lat: 0 };
-    return {
-      lng, lat: Math.asin(Math.sqrt(2) * y * z),
-    };
-  }
-
   getDepth(player: Player, x: number, y: number) {
     const depth = this._depth;
     const { fwd, rgt, up } = player;
