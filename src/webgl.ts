@@ -86,7 +86,7 @@ function update_overlay(camera: Camera, overlay: Overlay, player: Player, states
     if (Math.abs(ry) < .01) { ry = 0; }
   }
 
-  const { distance } = camera.getDepth(player, rx, ry);
+  const distance = camera.getDepth(player, rx, ry);
   overlay.tick(seconds);
   overlay.reticle(rx, ry, distance);
 }

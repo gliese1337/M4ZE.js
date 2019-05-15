@@ -2,7 +2,7 @@ import createProgramFromScripts from "./webgl-utils";
 import Maze from "./Maze";
 import Player from "./Player";
 import cast from "./Raycast";
-import { Vec4, normalize } from "./Vectors";
+import { Vec4, normalize, rot_plane } from "./Vectors";
 
 interface LocMap {
   size: WebGLUniformLocation | null;
@@ -15,6 +15,10 @@ interface LocMap {
   up: WebGLUniformLocation | null;
   fwd: WebGLUniformLocation | null;
   seed: WebGLUniformLocation | null;
+}
+
+function sigmoid(x: number, slope: number, shift: number) {
+  return 0.5 + 0.5 * Math.tanh(slope * (x - 0.5) - shift);
 }
 
 async function initCamera(gl: WebGL2RenderingContext, width: number, height: number) {
@@ -138,19 +142,45 @@ export default class Camera {
   get width() { return this.canvas.width; }
   get height() { return this.canvas.height; }
 
-  getDepth(player: Player, x: number, y: number) {
+  getRay(player: Player, x: number, y: number) {
+    const scaledx = 2.0 * x / this.canvas.width;
+    const scaledy = 2.0 * y / this.canvas.height;
+    const mag = Math.hypot(scaledx, scaledy);
+
+    if (mag > 1) return null;
+
     const depth = this._depth;
     const { fwd, rgt, up } = player;
-    const ray = {
+    const pixel_ray = {
       x: fwd.x * depth + rgt.x * x + up.x * y,
       y: fwd.y * depth + rgt.y * x + up.y * y,
       z: fwd.z * depth + rgt.z * x + up.z * y,
       w: fwd.w * depth + rgt.w * x + up.z * y
     };
+
+    const lat = mag * 3.14159;
+    const lng = Math.atan2(scaledy, scaledx);
+    const angle_ray = { ...fwd };
+    rot_plane(angle_ray, rgt, fwd, -lat)
+    rot_plane(angle_ray, up, rgt, -lng);
     
+    const mix = sigmoid(mag, 20.0, 3.0);
+    const invmix = 1 - mix;
+    return {
+      x: pixel_ray.x * invmix + angle_ray.x * mix,
+      y: pixel_ray.y * invmix + angle_ray.y * mix,
+      z: pixel_ray.z * invmix + angle_ray.z * mix,
+      w: pixel_ray.w * invmix + angle_ray.w * mix,
+    }
+  }
+
+  getDepth(player: Player, x: number, y: number) {
+    const ray = this.getRay(player, x, y);
+    if (ray === null) return 0;
+
     normalize(ray);
 
-    return cast(player.pos, ray, this.mapsize * 2, this.map);
+    return cast(player.pos, ray, this.mapsize * 2, this.map).distance;
   }
 
   resize(w: number, h: number) {

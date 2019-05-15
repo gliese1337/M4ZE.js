@@ -66,6 +66,19 @@ export function vec_rot2(v: Vec4, k: Vec4, t: number) {
   k.w = k.w*cos - w*sin;
 }
 
+export function rot_plane(v: Vec4, x: Vec4, y: Vec4, theta: number) {
+  const vx = dot(v, x);
+  const vy = dot(v, y);
+  const ct1 = Math.cos(theta) - 1.0;
+  const st = Math.sin(theta);
+  const xcomp = vx * ct1 - vy * st;
+  const ycomp = vy * ct1 + vx * st;
+  v.x += x.x * xcomp + y.x * ycomp;
+  v.y += x.y * xcomp + y.y * ycomp;
+  v.z += x.z * xcomp + y.z * ycomp;
+  v.w += x.w * xcomp + y.w * ycomp;
+}
+
 export function normalize(v: Vec4) {
   const len = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
   v.x /= len;
