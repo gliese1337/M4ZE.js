@@ -77,13 +77,16 @@ function update_zoom(camera: Camera, states: ControlStates, seconds: number) {
 
 let rx = 0, ry = 0;
 function update_overlay(camera: Camera, overlay: Overlay, player: Player, states: ControlStates, seconds: number) {
-  if (states.mouse) {
-    ({mouseX: rx, mouseY: ry} = states);
+  const { mouseX, mouseY } = states;
+  if (Math.hypot(mouseX / camera.width, mouseY / camera.height) < 0.5) {
+    [ rx, ry ] = [ mouseX, mouseY ];
+    document.body.style.cursor = "none";
   } else {
     if (rx !== 0) { rx /= 1.5;}
     if (Math.abs(rx) < .01) { rx = 0; }
     if (ry !== 0) { ry /= 1.5;}
     if (Math.abs(ry) < .01) { ry = 0; }
+    document.body.style.cursor = "default";
   }
 
   const distance = camera.getDepth(player, rx, ry);

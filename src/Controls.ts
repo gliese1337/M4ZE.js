@@ -136,11 +136,18 @@ export default class Controls {
 
   onMouse(val: -1|0|1, e: MouseEvent) {
     const { button } = e;
+    
+    const { width, height, states, keys } = this;
+    
+    states.mouseX = e.pageX - width / 2;
+    states.mouseY = e.pageY - height / 2;
+    states.clipX = 2 * (states.mouseX / width);
+    states.clipY = 2 * (states.mouseY / height);
+
     if (button !== 0 && button !== 2) {
       return;
     }
 
-    const { width, height, states, keys } = this;
     if (val === 1) {
       if (button === 2) {
         keys.rmb = true;
@@ -149,12 +156,7 @@ export default class Controls {
         states.fwd = !keys.sft;
         states.bak = keys.sft;
       }
-      states.mouseX = e.pageX - width / 2;
-      states.mouseY = e.pageY - height / 2;
-      states.clipX = 2 * (states.mouseX / width);
-      states.clipY = 2 * (states.mouseY / height);
       states.mouse = true;
-      document.body.style.cursor = "none";
       this.activated = true;
     } else if (val === -1) {
       if (button === 2) {
@@ -165,12 +167,6 @@ export default class Controls {
         states.bak = this.keys.spc && keys.sft;
       }
       states.mouse = keys.lmb || keys.rmb;
-      document.body.style.cursor = "default";
-    } else if (states.mouse) {
-      states.mouseX = e.pageX - width / 2;
-      states.mouseY = e.pageY - height / 2;
-      states.clipX = 2 * (states.mouseX / width);
-      states.clipY = 2 * (states.mouseY / height);
     }
   }
 

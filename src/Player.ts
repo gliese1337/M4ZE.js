@@ -63,30 +63,36 @@ export default class Player {
 
   translate(seconds: number, map: Maze) {
     const { pos, velocity: v } = this;
-    const mag = Math.sqrt(len2(v));
+    let mag = Math.sqrt(len2(v));
     if (mag === 0) return false;
 
-    const inc = mag * seconds;
-    unit.x = v.x / mag;
-    unit.y = v.y / mag;
-    unit.z = v.z / mag;
-    unit.w = v.w / mag;
+    do {
+      const inc = mag * seconds;
+      unit.x = v.x / mag;
+      unit.y = v.y / mag;
+      unit.z = v.z / mag;
+      unit.w = v.w / mag;
 
-    let { distance, norm } = cast(pos, unit, inc + 0.05, map);
-    distance -= 0.01;
+      let { distance, norm } = cast(pos, unit, inc + 0.05, map);
+      distance -= 0.01;
 
-    if (distance < inc) {
-      const scale = seconds * distance / inc;
+      if (distance < inc) {
+        const scale = seconds * distance / inc;
 
-      // Translate up to the point of impact
-      vec_add(pos, scale, v);
+        // Translate up to the point of impact
+        vec_add(pos, scale, v);
 
-      // Translate along the surface
-      reject(v, norm);
-      seconds -= scale;
-    }
+        seconds -= scale;
+        if (seconds <= 0) break;
 
-    vec_add(pos, seconds, v);
+        // Redirect the remaining motion along the surface
+        reject(v, norm);
+        mag = Math.sqrt(len2(v));
+      } else {
+        vec_add(pos, seconds, v);
+        break;
+      }
+    } while(mag > 0);
 
     const { size } = map;
     pos.x -= size * Math.floor(pos.x / size);
