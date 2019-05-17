@@ -34,7 +34,6 @@ function isSafe(grid: { val: number, id: number }[][][][], size: number, x: numb
 function generate(start: Vec4, size: number): [ { val: number, id: number }[][][][], number ] {
   const grid: { val: number, id: number }[][][][] = [];
 
-  console.log("Generating Grid");
   for (let w = 0; w < size; w++) {
     let zlevel = []
     for (let z = 0; z < size; z++) {
@@ -48,8 +47,7 @@ function generate(start: Vec4, size: number): [ { val: number, id: number }[][][
     }
     grid.push(zlevel);
   }
-  
-  console.log("Generating Maze");
+
   let { x: nx, y: ny, z: nz, w: nw } = start;
   const cells = [start];
   grid[nw][nz][ny][nx] = { val: 0, id: 0 };
@@ -107,8 +105,7 @@ function generate(start: Vec4, size: number): [ { val: number, id: number }[][][
       cells.push({ x: nx, y: ny, z: nz, w: nw });
     }
   }
-  
-  console.log("Completed Maze");
+
   return [ grid, nextId ];
 }
 

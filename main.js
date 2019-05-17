@@ -10,9 +10,10 @@ function createWindow() {
     height: 600,
     webPreferences: { nodeIntegration: true },
   });
-  //win.setMenu(null);
+  
+  win.setMenu(null);
 
-  win.webContents.openDevTools();
+  //win.webContents.openDevTools();
 
   win.loadURL(url.format({
     pathname: path.join(__dirname, 'webgl.html'),

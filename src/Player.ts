@@ -190,7 +190,6 @@ export default class Player {
     mouse: if (controls.mouse) {
       const { clipX: x, clipY: y } = controls;
       if (x * x + y * y > 1) break mouse;
-      console.log("x,y", x, y);
       if (x !== 0) {
         this.rotate('z', 'x', x * Math.PI * seconds, true);
         moved = true;

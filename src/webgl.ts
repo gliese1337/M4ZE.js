@@ -11,7 +11,7 @@ const seed = Math.random().toString();
 seedrandom(seed, { global: true });
 console.log(seed);
 
-const SIZE = 3;
+const SIZE = 6;
 
 function mark_route(camera: Camera, map: Maze, skip: number) {
   const { start, path, end } = map.route;
@@ -212,7 +212,6 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       }
 
       if (!change) {
-        console.log("Transferring control to the player");
         player.velocity = { x: 0, y: 0, z: 0, w: 0 };
         controls.activated = true;
       }
@@ -221,16 +220,9 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
     }
 
     update_overlay(camera, overlay, player, states, seconds);
-
-    //console.log("Current Cell:", curr_cell);
-    //console.log("Player pos:", player.pos);
-    //console.log("Cell value:", map.get(curr_cell));
   });
 
   camera.onready(() => {
-    console.log("Current Cell:", curr_cell);
-    console.log("Player pos:", player.pos);
-    console.log("Cell value:", map.get(curr_cell));
     camera.render(player);
     loop.start();
   });
