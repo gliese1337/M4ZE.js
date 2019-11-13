@@ -3,6 +3,7 @@ precision highp float;
 precision lowp usampler2D;
 
 uniform int SIZE;
+float fSize;
 
 uniform float u_depth;
 uniform vec2 u_resolution;
@@ -108,7 +109,8 @@ float layered_noise(vec3 v, int base, int octaves) {
 float julia(vec3 v, vec3 seed) {
   const int iter = 10;
 
-  v = v * 2.0 - 1.0;
+  seed = mix(seed, floor(mod(v, fSize) / fSize), 0.5);
+  v = fract(v) * 2.0 - 1.0;
   for (int i = 0; i < iter; i++) {
     v = vec3(
       v.x*v.x - v.y*v.y - v.z*v.z,
@@ -132,7 +134,6 @@ const vec3 blue = vec3(0.5,0.5,1.0);
 const vec3 yellow = vec3(0.71,0.71,0.5);
 
 vec3 calc_tex(int dim, vec4 ray) {
-  ray = fract(ray);
   vec3 coords, tint;
   float h;
 
@@ -163,7 +164,7 @@ vec3 calc_tex(int dim, vec4 ray) {
   }
 
   vec3 base = texture(u_colorscale, vec2(h, 0.5)).rgb;
-  return mix(tint / 8.0, base, layered_noise(coords, 5, 3));
+  return mix(tint / 8.0, base, layered_noise(mod(coords, fSize), 5, 3));
 }
 
 /*
@@ -346,7 +347,8 @@ float sigmoid(float x, float slope, float shift) {
 const float range = 10.0;
 
 void main() {
-  vec4 o = mod(u_origin, float(SIZE));
+  fSize = float(SIZE);
+  vec4 o = mod(u_origin, fSize);
 
   outColor = vec4(vec3(0), 1.0);
   if ((get_cell(ivec4(o)).x & 128u) == 128u) return;
