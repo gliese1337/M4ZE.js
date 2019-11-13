@@ -124,6 +124,29 @@ float julia(vec3 v, vec3 seed) {
   return 0.0;
 }
 
+vec4 randp(vec4 p) {
+  return sin(p*vec4(57.4, 200.3, 122.4, 263.7)+dot(p,p+6.0)) * 0.5;
+}
+
+float voronoi(vec4 uv) {
+  vec4 gv = fract(3.0*uv) - 0.5;
+  vec4 id = floor(3.0*uv);
+  float minDist = 100.0;
+  for(float x=-1.0;x<=1.0;x++) {
+    for(float y=-1.0;y<=1.0;y++) {
+      for(float z=-1.0;z<=1.0;z++) {
+        for(float w=-1.0;w<=1.0;w++) {
+          vec4 offs = vec4(x, y, z, w);
+          float d = length(offs + randp(mod(id+offs, float(SIZE))) - gv);
+          if(d<minDist) minDist = d;
+        }
+      }
+    }
+  }
+
+  return minDist * (2.0 / 3.1623);
+}
+
 /* Main Texture Calculation */
 const vec3 grey = vec3(0.2);
 const vec3 red = vec3(1.0,0.5,0.5);
@@ -132,38 +155,36 @@ const vec3 blue = vec3(0.5,0.5,1.0);
 const vec3 yellow = vec3(0.71,0.71,0.5);
 
 vec3 calc_tex(int dim, vec4 ray) {
-  ray = fract(ray);
-  vec3 coords, tint;
-  float h;
+  ray = mod(ray, float(SIZE));
+  vec3 tint, coords;
 
   switch (dim) {
   case 1:
     coords = ray.yzw;
     tint = red;
-    h = julia(coords, u_seed);
     break;
   case 2:
     coords = ray.xzw;
     tint = green;
-    h = julia(coords, u_seed);
     break;
   case 3:
     coords = ray.xyw;
     tint = blue;
-    h = julia(coords, u_seed);
     break;
   default:
     coords = ray.xyz;
     tint = yellow;
-    h = julia(coords, u_seed);
   }
+
+  float h = voronoi(ray);
 
   if (h == 0.0) {
     return mix(tint / 16.0, grey, layered_noise(coords, 3, 3));
   }
 
-  vec3 base = texture(u_colorscale, vec2(h, 0.5)).rgb;
-  return mix(tint / 8.0, base, layered_noise(coords, 5, 3));
+  vec3 base = vec3(h / 4.0);//texture(u_colorscale, vec2(h, 0.5)).rgb;
+  //return mix(tint / 8.0, base, 0.5);
+  return mix(base, tint / 4.0, layered_noise(coords, 1, 3));
 }
 
 /*
