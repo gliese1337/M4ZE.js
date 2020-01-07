@@ -1,8 +1,8 @@
 import Camera from "./GLCamera";
 import Overlay from "./Overlay";
 import Player from "./Player";
-import Controls, { ControlStates } from "./Controls";
-import GameLoop from "./GameLoop";
+import { ControlStates, UpdateControls, defaultControlStates, keyCodes, mouseCodes } from "./Controls";
+import Game from "./Game";
 import Maze from "./Maze.js";
 import { vec_rot, normalize, orthonorm, angle_between, Vec4 } from "./Vectors";
 
@@ -78,8 +78,8 @@ function update_zoom(camera: Camera, states: ControlStates, seconds: number) {
 let rx = 0, ry = 0;
 function update_overlay(camera: Camera, overlay: Overlay, player: Player, states: ControlStates, seconds: number) {
   const { mouseX, mouseY } = states;
-  if (Math.hypot(mouseX / camera.width, mouseY / camera.height) < 0.5) {
-    [ rx, ry ] = [ mouseX, mouseY ];
+  if (Math.hypot(mouseX, mouseY) < 1) {
+    [ rx, ry ] = [ mouseX * camera.width / 2, mouseY * camera.height / 2 ];
     document.body.style.cursor = "none";
   } else {
     if (rx !== 0) { rx /= 1.5;}
@@ -109,9 +109,10 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
     w: curr_cell.w + 0.1 + 0.8 * Math.random(),
   }, ana);
 
-  const controls = new Controls(d.width, d.height);
+  const controls = { ...defaultControlStates };
   const camera = new Camera(d, map, Math.PI / 1.5);
   const overlay = new Overlay(o);
+  const game = new Game();
 
   mark_route(camera, map, 0);
 
@@ -120,10 +121,8 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
     const h = window.innerHeight;
     overlay.resize(w,h);
     camera.resize(w,h);
-    controls.resize(w, h);
+    game.resize(w, h);
   },false);
-
-  const states = controls.states;
 
   const update_cell = ({ x: cx, y: cy, z: cz, w: cw }: Vec4) => {
     cx = Math.floor(cx);
@@ -142,14 +141,14 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
         case 2: {
           if (rounds < route.path.length) {
             reverse(camera, map, ++rounds, overlay);
-            controls.activated = false;
+            game.controlsActive = false;
           } else {
             throw new Error("Resetting is not yet implemented");
           }
           return true;
         }
         case 1: case 3: {
-          const nv = states.mark?3:0;
+          const nv = controls.mark?3:0;
           map.set(curr_cell, nv);
           camera.setCell(curr_cell, [nv]);
 
@@ -170,7 +169,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
       }
     } else {
       const val = map.get({ x: cx, y: cy, z: cz, w: cw });
-      if (states.mark && val !== 3) {
+      if (controls.mark && val !== 3) {
         map.set(curr_cell, 3);
         camera.setCell(curr_cell, [3]);
         return true;
@@ -180,50 +179,54 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
     return false;
   }
 
-  const loop = new GameLoop((seconds: number) => {
-    overlay.progress = route.fromEnd[map.getId(curr_cell)];
-    if (controls.activated) {
-      let change = player.update(states, seconds, map);
-      change = update_zoom(camera, states, seconds) || change;
-      change = update_cell(player.pos) || change;
-
-      if (change) { camera.render(player); }
-
+  game
+    .setInputMap(keyCodes, mouseCodes)
+    .setUpdate(UpdateControls(controls))
+    .setLoop((seconds: number) => {
       overlay.progress = route.fromEnd[map.getId(curr_cell)];
-    } else {
-      let change = false;
-      const { pos, fwd } = player;
-      const k = getDirectionToPath(pos, route.path[0]);
-      const angle = Math.abs(angle_between(k, fwd));
-      if (angle > 1e-5) {
-        orthonorm(k, [fwd]);
-        const t =  angle > 0.0125 ? seconds * 0.5 : angle;
-        vec_rot(fwd, k, t);
-        player.rotate('x', 'y', t / 1.5, false);
-        player.renormalize();
-        change = true;
-      }
+      if (game.controlsActive) {
+        let change = player.update(controls, seconds, map);
+        change = update_zoom(camera, controls, seconds) || change;
+        change = update_cell(player.pos) || change;
 
-      for (const d of [ "x", "y", "z", "w" ] as (keyof Vec4)[]) {
-        const dd = 0.5 - (pos[d] - Math.floor(pos[d]));
-        if (Math.abs(dd) > 0.01) {
-          pos[d] += seconds * dd;
+        if (change) { camera.render(player); }
+
+        overlay.progress = route.fromEnd[map.getId(curr_cell)];
+      } else {
+        let change = false;
+        const { pos, fwd } = player;
+        const k = getDirectionToPath(pos, route.path[0]);
+        const angle = Math.abs(angle_between(k, fwd));
+        if (angle > 1e-5) {
+          orthonorm(k, [fwd]);
+          const t =  angle > 0.0125 ? seconds * 0.5 : angle;
+          vec_rot(fwd, k, t);
+          player.rotate('x', 'y', t / 1.5, false);
+          player.renormalize();
+          change = true;
         }
+
+        for (const d of [ "x", "y", "z", "w" ] as (keyof Vec4)[]) {
+          const dd = 0.5 - (pos[d] - Math.floor(pos[d]));
+          if (Math.abs(dd) > 0.01) {
+            pos[d] += seconds * dd;
+          }
+        }
+
+        if (!change) {
+          player.velocity = { x: 0, y: 0, z: 0, w: 0 };
+          game.controlsActive = true;
+        }
+
+        camera.render(player);
       }
 
-      if (!change) {
-        player.velocity = { x: 0, y: 0, z: 0, w: 0 };
-        controls.activated = true;
-      }
-
-      camera.render(player);
-    }
-
-    update_overlay(camera, overlay, player, states, seconds);
-  });
+      update_overlay(camera, overlay, player, controls, seconds);
+    })
+    .resize(camera.width, camera.height);
 
   camera.onready(() => {
     camera.render(player);
-    loop.start();
+    game.start();
   });
 }

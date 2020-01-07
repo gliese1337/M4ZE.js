@@ -188,7 +188,7 @@ export default class Player {
     }
 
     mouse: if (controls.mouse) {
-      const { clipX: x, clipY: y } = controls;
+      const { mouseX: x, mouseY: y } = controls;
       if (x * x + y * y > 1) break mouse;
       if (x !== 0) {
         this.rotate('z', 'x', x * Math.PI * seconds, true);
