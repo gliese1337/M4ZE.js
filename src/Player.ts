@@ -104,22 +104,23 @@ export default class Player {
   }
  
   update_speed(controls: ControlStates, seconds: number) {
-    const C = controls.mouse ? 1.5 : // drag coefficient
-      (controls.fwd || controls.bak) ? 1 : 2;
-
     const { velocity: v } = this;
     
     // Gravity
     //v.w -= 0.05 * seconds;
 
+    const A = controls.mouse ? Math.max(0, 0.9 - Math.hypot(controls.mouseX, controls.mouseY)) : 1;
+
     if (controls.fwd) {
-      vec_add(v, 0.75 * seconds, this.fwd);
+      vec_add(v, 0.75 * A * seconds, this.fwd);
     } else if (controls.bak) {
-	    vec_add(v, -0.75 * seconds, this.fwd);
+	    vec_add(v, -0.75 * A * seconds, this.fwd);
     }
 
     const speed = Math.sqrt(len2(v));
     if (speed > .001) {
+      const C = controls.mouse ? 1.5 : // drag coefficient
+        (controls.fwd || controls.bak) ? 1 : 2;
       const scale = Math.max(speed - Math.pow(speed, 2 - 1/(speed + 1)) * C * seconds, 0) / speed;
 
       v.x *= scale;
