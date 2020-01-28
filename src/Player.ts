@@ -109,7 +109,8 @@ export default class Player {
     // Gravity
     //v.w -= 0.05 * seconds;
 
-    const A = controls.mouse ? Math.max(0, 0.9 - Math.hypot(controls.mouseX, controls.mouseY)) : 1;
+    const { mouseX: x, mouseY: y } = controls;
+    const A = controls.mouse ? Math.max(0, 0.9 - (x*x+y*y)) : 1;
 
     if (controls.fwd) {
       vec_add(v, 0.75 * A * seconds, this.fwd);
@@ -135,61 +136,33 @@ export default class Player {
     }
   }
 
-  update(controls: ControlStates, seconds: number, map: Maze) {
-    const accelerating = controls.fwd || controls.bak || controls.mouse;
+  private rot_plane(p: boolean, n: boolean, u: keyof Vec4, v: keyof Vec4, angle: number, acc: boolean) {
+    if (p) {
+      this.rotate(u, v, angle, acc);
+      return true;
+    }
+    if (n) {
+      this.rotate(v, u, angle, acc);
+      return true;
+    }
+
+    return false;
+  }
+
+  update(c: ControlStates, seconds: number, map: Maze) {
+    const acc = c.fwd || c.bak || c.mouse;
     const angle = seconds * turnRate;
     let moved = false;
 
-    if (controls.pup) {
-      this.rotate('z', 'y', angle, accelerating);
-      moved = true;
-    } else if (controls.pdn) {
-      this.rotate('y', 'z', angle, accelerating);
-      moved = true;
-    }
-    
-    if (controls.yrt) {
-      this.rotate('z', 'x', angle, accelerating);
-      moved = true;
-    } else if (controls.ylt) {
-      this.rotate('x', 'z', angle, accelerating);
-      moved = true;
-    }
-    
-    if (controls.rrt) {
-      this.rotate('x', 'y', angle, accelerating);
-      moved = true;
-    } else if (controls.rlt) {
-      this.rotate('y', 'x', angle, accelerating);
-      moved = true;
-    }
+    moved = moved || this.rot_plane(c.pup, c.pdn, 'z', 'y', angle, acc);
+    moved = moved || this.rot_plane(c.yrt, c.ylt, 'z', 'x', angle, acc);
+    moved = moved || this.rot_plane(c.rrt, c.rlt, 'x', 'y', angle, acc);
+    moved = moved || this.rot_plane(c.wup, c.wdn, 'z', 'w', angle, acc);
+    moved = moved || this.rot_plane(c.wyr, c.wyl, 'y', 'w', angle, acc);
+    moved = moved || this.rot_plane(c.wrr, c.wrl, 'w', 'x', angle, acc);
 
-    if (controls.wup) {
-      this.rotate('z', 'w', angle, accelerating);
-      moved = true;
-    } else if (controls.wdn) {
-      this.rotate('w', 'z', angle, accelerating);
-      moved = true;
-    }
-
-    if (controls.wyr) {
-      this.rotate('w', 'y', angle, accelerating);
-      moved = true;
-    } else if (controls.wyl) {
-      this.rotate('y', 'w', angle, accelerating);
-      moved = true;
-    }
-
-    if (controls.wrr) {
-      this.rotate('w', 'x', angle, accelerating);
-      moved = true;
-    } else if (controls.wrl) {
-      this.rotate('x', 'w', angle, accelerating);
-      moved = true;
-    }
-
-    mouse: if (controls.mouse) {
-      const { mouseX: x, mouseY: y } = controls;
+    mouse: if (c.mouse) {
+      const { mouseX: x, mouseY: y } = c;
       if (x * x + y * y > 1) break mouse;
       if (x !== 0) {
         this.rotate('z', 'x', x * Math.PI * seconds, true);
@@ -205,7 +178,7 @@ export default class Player {
       this.renormalize();
     }
   
-    this.update_speed(controls, seconds);
+    this.update_speed(c, seconds);
     
     return this.translate(seconds, map) || moved;
   }
