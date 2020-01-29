@@ -1,4 +1,4 @@
-import { Vec4, len2, vec_rot2, orthonorm, vec_add, reject } from "./Vectors";
+import { Vec4, len2, vec_rot2, orthonorm, vec_add, reject, len } from "./Vectors";
 import { ControlStates } from "./Controls";
 import Maze from "./Maze";
 import cast from "./Raycast";
@@ -28,7 +28,7 @@ export default class Player {
 
   public fwd: Vec4;
   public rgt: Vec4;
-  public up: Vec4;
+  public up:  Vec4;
   public ana: Vec4;
 
   constructor(public pos: Vec4, ana: keyof Vec4) {
@@ -87,7 +87,7 @@ export default class Player {
 
         // Redirect the remaining motion along the surface
         reject(v, norm);
-        mag = Math.sqrt(len2(v));
+        mag = len(v);
       } else {
         vec_add(pos, seconds, v);
         break;
@@ -111,17 +111,13 @@ export default class Player {
 
     const { mouseX: x, mouseY: y } = controls;
     const A = controls.mouse ? Math.max(0, 0.9 - (x*x+y*y)) : 1;
+    vec_add(v, 0.75 * controls.fwdbak * A * seconds, this.fwd);
 
-    if (controls.fwd) {
-      vec_add(v, 0.75 * A * seconds, this.fwd);
-    } else if (controls.bak) {
-	    vec_add(v, -0.75 * A * seconds, this.fwd);
-    }
-
-    const speed = Math.sqrt(len2(v));
-    if (speed > .001) {
+    const speed2 = len2(v);
+    if (speed2 > .0001) {
+      const speed = Math.sqrt(speed2);
       const C = controls.mouse ? 1.5 : // drag coefficient
-        (controls.fwd || controls.bak) ? 1 : 2;
+        controls.fwdbak !== 0 ? 1 : 2;
       const scale = Math.max(speed - Math.pow(speed, 2 - 1/(speed + 1)) * C * seconds, 0) / speed;
 
       v.x *= scale;
@@ -136,30 +132,24 @@ export default class Player {
     }
   }
 
-  private rot_plane(p: boolean, n: boolean, u: keyof Vec4, v: keyof Vec4, angle: number, acc: boolean) {
-    if (p) {
-      this.rotate(u, v, angle, acc);
-      return true;
-    }
-    if (n) {
-      this.rotate(v, u, angle, acc);
-      return true;
-    }
-
-    return false;
+  private rot_plane(dir: number, u: keyof Vec4, v: keyof Vec4, angle: number, acc: boolean) {
+    if (dir === 0) return false;
+    if (dir < 0) [u, v] = [v, u];
+    this.rotate(u, v, angle, acc);
+    return true;
   }
 
   update(c: ControlStates, seconds: number, map: Maze) {
-    const acc = c.fwd || c.bak || c.mouse;
+    const acc = c.fwdbak !== 0 || c.mouse;
     const angle = seconds * turnRate;
     let moved = false;
 
-    moved = moved || this.rot_plane(c.pup, c.pdn, 'z', 'y', angle, acc);
-    moved = moved || this.rot_plane(c.yrt, c.ylt, 'z', 'x', angle, acc);
-    moved = moved || this.rot_plane(c.rrt, c.rlt, 'x', 'y', angle, acc);
-    moved = moved || this.rot_plane(c.wup, c.wdn, 'z', 'w', angle, acc);
-    moved = moved || this.rot_plane(c.wyr, c.wyl, 'y', 'w', angle, acc);
-    moved = moved || this.rot_plane(c.wrr, c.wrl, 'w', 'x', angle, acc);
+    moved = moved || this.rot_plane(c.pitc, 'z', 'y', angle, acc);
+    moved = moved || this.rot_plane(c.zyaw, 'z', 'x', angle, acc);
+    moved = moved || this.rot_plane(c.roll, 'x', 'y', angle, acc);
+    moved = moved || this.rot_plane(c.wptc, 'z', 'w', angle, acc);
+    moved = moved || this.rot_plane(c.wyaw, 'y', 'w', angle, acc);
+    moved = moved || this.rot_plane(c.wrol, 'w', 'x', angle, acc);
 
     mouse: if (c.mouse) {
       const { mouseX: x, mouseY: y } = c;

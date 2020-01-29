@@ -25,24 +25,18 @@ interface MazeKeyValues {
   rmb: boolean;
 };
 
+type sign = -1|0|1;
+
 export interface ControlStates {
   mark: boolean;
-  fwd: boolean;
-  bak: boolean;
-  pup: boolean;
-  pdn: boolean,
-  ylt: boolean;
-  yrt: boolean;
-  rlt: boolean;
-  rrt: boolean;
-  wup: boolean;
-  wdn: boolean,
-  wyl: boolean;
-  wyr: boolean;
-  wrl: boolean;
-  wrr: boolean;
-  zoomin: boolean;
-  zoomout: boolean,
+  fwdbak: sign;
+  pitc: sign;
+  zyaw: sign;
+  roll: sign;
+  wptc: sign;
+  wyaw: sign;
+  wrol: sign;
+  zoom: sign;
   mouse: boolean;
   mouseX: number;
   mouseY: number;
@@ -95,49 +89,36 @@ export const mouseCodes: { [key: number]: keyof MazeKeyValues } = {
 
 export const defaultControlStates: ControlStates = {
   mark: false,
-  fwd: false, bak: false,
-  pup: false, pdn: false,
-  ylt: false, yrt: false,
-  rlt: false, rrt: false,
-  wup: false, wdn: false,
-  wyl: false, wyr: false,
-  wrl: false, wrr: false,
-  zoomin: false, zoomout: false,
+  fwdbak: 0,
+  pitc: 0, zyaw: 0, roll: 0,
+  wptc: 0, wyaw: 0, wrol: 0,
+  zoom: 0,
   mouse: false, mouseX: 0, mouseY: 0
 };
 
 export const UpdateControls: (states: ControlStates) => ControlUpdater =
   (states: ControlStates) => (keys: KeyValues, mouse: MousePos) => {
 
-      states.mouse = keys.rmb || keys.lmb;
-      states.mouseX = -mouse.mouseX;
-      states.mouseY = -mouse.mouseY;
+    states.mouse = keys.rmb || keys.lmb;
+    states.mouseX = -mouse.mouseX;
+    states.mouseY = -mouse.mouseY;
 
-      if (states.mouse) {
-        states.fwd = keys.lmb && !keys.sft;
-        states.bak = keys.lmb && keys.sft;
-      } else {
-        states.fwd = keys.spc && !keys.sft;
-        states.bak = keys.spc && keys.sft;
-      }
-  
-      states.mark = keys.m;
-      states.zoomin = !keys.pls && keys.min;
-      states.zoomout = keys.pls && !keys.min;
+    if (states.mouse) {
+      states.fwdbak = keys.lmb ? keys.sft ? -1 : 1 : 0;
+    } else {
+      states.fwdbak = keys.spc ? keys.sft ? -1 : 1 : 0;
+    }
 
-      // 3D Rotation
-      states.pup = keys.up && !keys.dwn;
-      states.pdn = !keys.up && keys.dwn;
-      states.ylt = keys.lft && !keys.rgt;
-      states.yrt = !keys.lft && keys.rgt;
-      states.rlt = keys.rlt && !keys.rrt;
-      states.rrt = !keys.rlt && keys.rrt;
+    states.mark = keys.m;
+    states.zoom = (keys.pls ? 1 : 0) + (keys.min ? -1 : 0) as sign;
 
-      // 4D Rotation
-      states.wup = keys.wup && !keys.wdn;
-      states.wdn = !keys.wup && keys.wdn;
-      states.wyl = keys.wlt && !keys.wrt;
-      states.wyr = !keys.wlt && keys.wrt;
-      states.wrl = keys.wrl && !keys.wrr;
-      states.wrr = !keys.wrl && keys.wrr;
-    };
+    // 3D Rotation
+    states.pitc = (keys.up  ? 1 : 0) + (keys.dwn ? -1 : 0) as sign;
+    states.zyaw = (keys.lft ? 1 : 0) + (keys.rgt ? -1 : 0) as sign;
+    states.roll = (keys.rlt ? 1 : 0) + (keys.rrt ? -1 : 0) as sign;
+
+    // 4D Rotation
+    states.wptc = (keys.wup ? 1 : 0) + (keys.wdn ? -1 : 0) as sign;
+    states.wyaw = (keys.wlt ? 1 : 0) + (keys.wrt ? -1 : 0) as sign;
+    states.wrol = (keys.wrl ? 1 : 0) + (keys.wrr ? -1 : 0) as sign;
+  };

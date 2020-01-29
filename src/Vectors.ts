@@ -9,6 +9,10 @@ export function len2(v: Vec4) {
   return v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w;
 }
 
+export function len(v: Vec4) {
+  return Math.hypot(v.x, v.y, v.z, v.w);
+}
+
 export function dot(v: Vec4, k: Vec4): number {
   return v.x*k.x+v.y*k.y+v.z*k.z+v.w*k.w;
 }
@@ -80,7 +84,7 @@ export function rot_plane(v: Vec4, x: Vec4, y: Vec4, theta: number) {
 }
 
 export function normalize(v: Vec4) {
-  const len = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z+v.w*v.w);
+  const len = Math.hypot(v.x, v.y, v.z, v.w);
   v.x /= len;
   v.y /= len;
   v.z /= len;

@@ -64,11 +64,11 @@ function getDirectionToPath(pos: Vec4, cell: Vec4) {
 }
 
 function update_zoom(camera: Camera, states: ControlStates, seconds: number) {
-  if (states.zoomin && camera.fov < Math.PI) {
+  if (states.zoom > 0 && camera.fov < Math.PI) {
     camera.fov = Math.min(camera.fov + Math.PI*seconds/2, Math.PI);
     return true;
   }
-  if (states.zoomout && camera.fov > .01) {
+  if (states.zoom < 0 && camera.fov > .01) {
     camera.fov = Math.max(camera.fov - Math.PI*seconds/2, 0);
     return true;
   }
