@@ -5,10 +5,10 @@
   "description": "A 4D maze game with raycast graphics",
   "main": "main.js",
   "scripts": {
-    "build": "node node_modules\\typescript\\bin\\tsc",
-    "start": "node node_modules\\electron\\cli.js .",
-    "release:win": "npm run build && node node_modules\\electron-packager\\cli.js . M4ZE --overwrite --asar --platform=win32 --arch=ia32 --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=M4ZE",
-    "release:mac": "npm run build && node node_modules\\electron-packager\\cli.js . --overwrite --platform=darwin --arch=x64 --prune=true --out=release-builds"
+    "build": "node node_modules/typescript/bin/tsc",
+    "start": "node node_modules/electron/cli.js .",
+    "release:win": "npm run build && node node_modules/electron-packager/cli.js . M4ZE --overwrite --asar --platform=win32 --arch=ia32 --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=M4ZE",
+    "release:mac": "npm run build && node node_modules/electron-packager/cli.js . --overwrite --platform=darwin --arch=x64 --prune=true --out=release-builds"
   },
   "repository": "https://github.com/gliese1337/M4ZE.js",
   "keywords": [
@@ -19,9 +19,9 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "@types/seedrandom": "^2.4.28",
-    "electron": "^1.8.8",
+    "electron": "^11.5.0",
     "electron-packager": "^13.1.1",
-    "typescript": "^3.4.5"
+    "typescript": "^3.9.2"
   },
   "dependencies": {
     "seedrandom": "^3.0.1"
