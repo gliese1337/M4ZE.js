@@ -3,6 +3,7 @@
 <head>
   <title>M4ZE</title>
   <link type="text/css" href="canvas.css" rel="stylesheet">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'">
 </head>
 <body>
 <canvas id="display"></canvas>
@@ -15,7 +16,7 @@
 
 <script id="fragment-shader" src="fragment.shader" type="x-shader/x-fragment"></script>
 
-<script>
+<script type="module">
   const { default: main } = require("./bin/webgl.js");
   const display = document.getElementById("display");
   const overlay = document.getElementById("overlay");

@@ -114,7 +114,7 @@ export default function main(d: HTMLCanvasElement, o: HTMLCanvasElement) {
   const overlay = new Overlay(o);
   const game = new Game();
 
-  mark_route(camera, map, 0);
+  camera.onready(() => mark_route(camera, map, 0));
 
   window.addEventListener('resize', () => {
     const w = window.innerWidth;

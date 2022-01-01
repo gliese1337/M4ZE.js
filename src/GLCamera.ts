@@ -79,7 +79,7 @@ async function initCamera(gl: WebGL2RenderingContext, width: number, height: num
 
   //load textures
   gl.uniform1i(locs.color, 1);
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     const image = new Image();
     image.src = "colorscale.png";
     image.addEventListener("load", () => {
@@ -200,7 +200,7 @@ export default class Camera {
     for (let i = 0; i < vlen && i < 4; i++) {
       mapdata[idx + i] = vals[i];
     }
-    if (!defer)  this.loadMap();
+    if (!defer) this.loadMap();
   }
 
   loadMap() {
