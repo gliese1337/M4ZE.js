@@ -19,7 +19,7 @@
   "license": "CC0-1.0",
   "devDependencies": {
     "@types/seedrandom": "^2.4.28",
-    "electron": "^28.3.2",
+    "electron": "^39.8.5",
     "electron-packager": "^17.1.2",
     "typescript": "^3.9.2"
   },
